@@ -1,11 +1,19 @@
-/* 
+/*
  * Field with Vertical and Horizontal Counter of Blocks.
  * Console output without useless zero lines and columns.
+ * Unnecessary grid array is removed.
  */
 
 #include "stdafx.h"
 #include <iostream>
 #include <SFML/Graphics.hpp>
+
+enum color
+{
+	PWHITE, /* 0 Probably White. */
+	DBLACK, /* 1 Definitely Black. */
+	DWHITE  /* 2 Definitely White. */
+};
 
 using namespace sf;
 
@@ -13,12 +21,7 @@ class Cell
 {
 public:
 	Sprite cellsprite;
-	enum color
-	{
-		PWHITE, /* 0 Probably White. */
-		DBLACK, /* 1 Definitely Black. */
-		DWHITE  /* 2 Definitely White. */
-	} state;
+	color state;
 
 	void CellPos(int x, int y)
 	{	
@@ -89,13 +92,6 @@ int main()
 		}
 	}
 
-	
-	/* Create an array of 0 and 1, where 0 is white and 1 is black.*/
-	int grid[height][width];
-	for (int i = 0; i < height; i++)
-		for (int j = 0; j < width; j++)
-			grid[i][j] = 0;
-
 	/* Create an array with nonogram description of horizontal blocks.*/
 	const int hindex = (width + 1) / 2;
 	int horizontal[height][hindex];
@@ -131,13 +127,7 @@ int main()
 			{
 				int xpos = Mouse::getPosition(window).x / 32;
 				int ypos = Mouse::getPosition(window).y / 32;
-
-				/* Change the numbergrid cell value. */
-				if (event.mouseButton.button == 0)
-					grid[ypos][xpos] = 1;
-				if (event.mouseButton.button == 1 || event.mouseButton.button == 2)
-					grid[ypos][xpos] = 0;
-
+				
 				/* As the "button" is enumeration, we send 0 if Left and 1 if Right. */
 				OneCell[ypos][xpos].ChangeState(event.mouseButton.button);
 
@@ -165,10 +155,10 @@ int main()
 						/* Walk through horizontal blocks. */
 						for (int j = width - 1; j >= 0; j--)
 						{
-							if (grid[ypos][j] == 1)
+							if (OneCell[ypos][j].state == DBLACK)
 							{
 								blsize++;
-								if (grid[ypos][j - 1] == 0 || j == 0)
+								if (OneCell[ypos][j - 1].state == PWHITE || OneCell[ypos][j - 1].state == DWHITE || j == 0)
 								{
 									blcount++;
 									horizontal[ypos][hindex - blcount] = blsize;
@@ -183,10 +173,10 @@ int main()
 						/* Walk through vertical blocks. */
 						for (int i = height - 1; i >= 0; i--)
 						{
-							if (grid[i][xpos] == 1)
+							if (OneCell[i][xpos].state == DBLACK)
 							{
 								blsize++;
-								if (grid[i - 1][xpos] == 0 || i == 0)
+								if (OneCell[i - 1][xpos].state == PWHITE || OneCell[i - 1][xpos].state == DWHITE || i == 0)
 								{
 									blcount++;
 									vertical[vindex - blcount][xpos] = blsize;
@@ -196,6 +186,7 @@ int main()
 						}
 					}
 					
+					/* Count the amount of empty lines in vertical blocks description. */
 					int vstart = 0;
 					for (int i = 0; i < vindex; i++)
 					{
@@ -211,6 +202,7 @@ int main()
 							break;
 					}
 
+					/* Count the amount of empty columns in horizontal blocks description. */
 					int hstart = 0;
 					for (int j = 0; j < hindex; j++)
 					{
@@ -224,8 +216,7 @@ int main()
 						}
 						if (hstart != j + 1)
 							break;
-					}
-					
+					}					
 					
 					/* Show blocks. */
 					{
