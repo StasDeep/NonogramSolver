@@ -1,3 +1,5 @@
+/* Field with Vertical and Horizontal Counter of Blocks. */
+
 #include "stdafx.h"
 #include <iostream>
 #include <SFML/Graphics.hpp>
@@ -62,8 +64,8 @@ public:
 
 int main()
 {
-	const int width = 5;
-	const int height = 5;
+	const int width = 15;
+	const int height = 15;
 
 	/* Create a window. */
 	RenderWindow window(sf::VideoMode(width*32, height*32), "Field", Style::Close);	
