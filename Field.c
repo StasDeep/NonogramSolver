@@ -1,4 +1,7 @@
-/* Field with Vertical and Horizontal Counter of Blocks. */
+/* 
+ * Field with Vertical and Horizontal Counter of Blocks.
+ * Console output without useless zero lines and columns.
+ */
 
 #include "stdafx.h"
 #include <iostream>
@@ -105,8 +108,7 @@ int main()
 	int vertical[vindex][width];
 	for (int i = 0; i < vindex; i++)
 		for (int j = 0; j < width; j++)
-			vertical[i][j] = 0;
-	
+			vertical[i][j] = 0;	
 
 
 	/* 
@@ -141,76 +143,115 @@ int main()
 
 				/* Change the description of the line and the column.*/
 				{
-					/* Reset the line description. */
-					for (int j = 0; j < hindex; j++)
+					/* Reset the description of the line and the column. */
 					{
-						horizontal[ypos][j] = 0;
-					}
-
-					/* Reset the column description. */
-					for (int i = 0; i < vindex; i++)
-					{
-						vertical[i][xpos] = 0;
-					}
-
-					int blcount = 0; /* Amount of blocks in a line/column. */
-					int blsize = 0; /* Amount of black cell in a block. */
-
-					/* Walk through horizontal blocks. */
-					for (int j = width - 1; j >= 0; j--)
-					{
-						if (grid[ypos][j] == 1)
+						/* Reset the line description. */
+						for (int j = 0; j < hindex; j++)
 						{
-							blsize++;
-							if (grid[ypos][j - 1] == 0 || j == 0)
+							horizontal[ypos][j] = 0;
+						}
+						/* Reset the column description. */
+						for (int i = 0; i < vindex; i++)
+						{
+							vertical[i][xpos] = 0;
+						}
+					}
+
+					/* Walk through blocks, counting their amount and size. */
+					{
+						int blcount = 0; /* Amount of blocks in a line/column. */
+						int blsize = 0; /* Amount of black cell in a block. */
+
+						/* Walk through horizontal blocks. */
+						for (int j = width - 1; j >= 0; j--)
+						{
+							if (grid[ypos][j] == 1)
 							{
-								blcount++;
-								horizontal[ypos][hindex - blcount] = blsize;
-								blsize = 0;
+								blsize++;
+								if (grid[ypos][j - 1] == 0 || j == 0)
+								{
+									blcount++;
+									horizontal[ypos][hindex - blcount] = blsize;
+									blsize = 0;
+								}
+							}
+						}
+
+						blcount = 0;
+						blsize = 0;
+
+						/* Walk through vertical blocks. */
+						for (int i = height - 1; i >= 0; i--)
+						{
+							if (grid[i][xpos] == 1)
+							{
+								blsize++;
+								if (grid[i - 1][xpos] == 0 || i == 0)
+								{
+									blcount++;
+									vertical[vindex - blcount][xpos] = blsize;
+									blsize = 0;
+								}
 							}
 						}
 					}
 					
-					blcount = 0;
-					blsize = 0;
-
-					/* Walk through vertical blocks. */
-					for (int i = height - 1; i >= 0; i--)
-					{
-						if (grid[i][xpos] == 1)
-						{
-							blsize++;
-							if (grid[i - 1][xpos] == 0 || i == 0)
-							{
-								blcount++;
-								vertical[vindex - blcount][xpos] = blsize;
-								blsize = 0;
-							}
-						}
-					}
-
-					system("cls");	
-					/* Vertical blocks. */
+					int vstart = 0;
 					for (int i = 0; i < vindex; i++)
 					{
 						for (int j = 0; j < width; j++)
 						{
-							std::cout << vertical[i][j];
-							std::cout << " ";
+							if (vertical[i][j] != 0)
+								break;
+							else
+								if (j == width - 1)
+									vstart++;
 						}
-						std::cout << "\n";
+						if (vstart != i + 1)
+							break;
 					}
-					std::cout << "-\n";
-					/* Horizontal blocks. */
-					for (int i = 0; i < height; i++)
+
+					int hstart = 0;
+					for (int j = 0; j < hindex; j++)
 					{
-						for (int j = 0; j < hindex; j++)
+						for (int i = 0; i < height; i++)
 						{
-							std::cout << horizontal[i][j];
-							std::cout << " ";
+							if (horizontal[i][j] != 0)
+								break;
+							else
+								if (i == height - 1)
+									hstart++;
 						}
-						std::cout << "\n";
-					}							
+						if (hstart != j + 1)
+							break;
+					}
+					
+					
+					/* Show blocks. */
+					{
+						system("cls");
+						/* Show vertical blocks. */
+						for (int i = vstart; i < vindex; i++)
+						{
+							for (int j = 0; j < width; j++)
+							{
+								std::cout << vertical[i][j];
+								std::cout << " ";
+							}
+							std::cout << "\n";
+						}
+						std::cout << "-\n";
+						/* Show horizontal blocks. */
+						for (int i = 0; i < height; i++)
+						{
+							for (int j = hstart; j < hindex; j++)
+							{
+								std::cout << horizontal[i][j];
+								std::cout << " ";
+							}
+							std::cout << "\n";
+						}
+					}
 				}
 				break;
 			}
