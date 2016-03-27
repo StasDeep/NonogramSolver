@@ -84,7 +84,7 @@ int main()
 		}
 	}
 
-
+	
 	/* Create an array of 0 and 1, where 0 is white and 1 is black.*/
 	int grid[height][width];
 	for (int i = 0; i < height; i++)
@@ -94,7 +94,7 @@ int main()
 	/* Create an array with nonogram description of horizontal blocks.*/
 	const int hindex = (width + 1) / 2;
 	int horizontal[height][hindex];
-	for (int i = 0; i < height; i++)	
+	for (int i = 0; i < height; i++)
 		for (int j = 0; j < hindex; j++)
 			horizontal[i][j] = 0;
 
@@ -102,8 +102,9 @@ int main()
 	const int vindex = (height + 1) / 2;
 	int vertical[vindex][width];
 	for (int i = 0; i < vindex; i++)
-		for (int j = 0; j < width; j++)		
-			vertical[i][j] = 0;		
+		for (int j = 0; j < width; j++)
+			vertical[i][j] = 0;
+	
 
 
 	/* 
@@ -139,13 +140,19 @@ int main()
 				/* Change the description of the line and the column.*/
 				{
 					/* Reset the line description. */
-					for (int j = width - 1; j >= 0; j--)
+					for (int j = 0; j < hindex; j++)
 					{
 						horizontal[ypos][j] = 0;
 					}
 
-					int blcount = 0;
-					int blsize = 0;
+					/* Reset the column description. */
+					for (int i = 0; i < vindex; i++)
+					{
+						vertical[i][xpos] = 0;
+					}
+
+					int blcount = 0; /* Amount of blocks in a line/column. */
+					int blsize = 0; /* Amount of black cell in a block. */
 
 					/* Walk through horizontal blocks. */
 					for (int j = width - 1; j >= 0; j--)
@@ -161,9 +168,38 @@ int main()
 							}
 						}
 					}
+					
+					blcount = 0;
+					blsize = 0;
 
-					system("cls");
-					/* Show the description of horizontal blocks. */
+					/* Walk through vertical blocks. */
+					for (int i = height - 1; i >= 0; i--)
+					{
+						if (grid[i][xpos] == 1)
+						{
+							blsize++;
+							if (grid[i - 1][xpos] == 0 || i == 0)
+							{
+								blcount++;
+								vertical[vindex - blcount][xpos] = blsize;
+								blsize = 0;
+							}
+						}
+					}
+
+					system("cls");	
+					/* Vertical blocks. */
+					for (int i = 0; i < vindex; i++)
+					{
+						for (int j = 0; j < width; j++)
+						{
+							std::cout << vertical[i][j];
+							std::cout << " ";
+						}
+						std::cout << "\n";
+					}
+					std::cout << "-\n";
+					/* Horizontal blocks. */
 					for (int i = 0; i < height; i++)
 					{
 						for (int j = 0; j < hindex; j++)
@@ -172,19 +208,15 @@ int main()
 							std::cout << " ";
 						}
 						std::cout << "\n";
-					}
-					std::cout << "\n\n";
+					}							
 				}
-
 				break;
 			}
-
+			
 			default:
 				break;
-
-			}
-
-		}		
+			} /* Switch end. */
+		} /* Event cycle end. */
 
 		window.clear();		
 		
