@@ -1,7 +1,7 @@
 /*
  * Field with Vertical and Horizontal Counter of Blocks.
  * Console output without useless zero lines and columns.
- * Unnecessary grid array is removed.
+ * Added dynamic array.
  */
 
 #include "stdafx.h"
@@ -70,8 +70,8 @@ public:
 
 int main()
 {
-	const int width = 15;
-	const int height = 15;
+	int width = 15;
+	int height = 15;
 
 	/* Create a window. */
 	RenderWindow window(sf::VideoMode(width*32, height*32), "Field", Style::Close);	
@@ -80,8 +80,12 @@ int main()
 	Texture celltex;
 	celltex.loadFromFile("images/cells.jpg"); 
 
-	/* Create a grid of cells and set their own position, texture and state. */
-	Cell OneCell[height][width];
+	/* Create a grid of cells. */
+	Cell **OneCell = new Cell *[height];
+	for (int i = 0; i < height; i++)
+		OneCell[i] = new Cell [width];
+
+	/* Set cells' own position, texture and state. */
 	for (int i = 0; i < height; i++)
 	{
 		for (int j = 0; j < width; j++)
@@ -92,16 +96,26 @@ int main()
 		}
 	}
 
+
 	/* Create an array with nonogram description of horizontal blocks.*/
-	const int hindex = (width + 1) / 2;
-	int horizontal[height][hindex];
+	int hindex = (width + 1) / 2;
+
+	int **horizontal = new int *[height];
+	for (int i = 0; i < height; i++)
+		horizontal[i] = new int[hindex];
+
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < hindex; j++)
 			horizontal[i][j] = 0;
 
+
 	/* Create an array with nonogram description of vertical blocks.*/
-	const int vindex = (height + 1) / 2;
-	int vertical[vindex][width];
+	int vindex = (height + 1) / 2;
+
+	int **vertical = new int *[vindex];
+	for (int i = 0; i < vindex; i++)
+		vertical[i] = new int[width];
+
 	for (int i = 0; i < vindex; i++)
 		for (int j = 0; j < width; j++)
 			vertical[i][j] = 0;	
@@ -158,7 +172,7 @@ int main()
 							if (OneCell[ypos][j].state == DBLACK)
 							{
 								blsize++;
-								if (OneCell[ypos][j - 1].state == PWHITE || OneCell[ypos][j - 1].state == DWHITE || j == 0)
+								if (j == 0 || OneCell[ypos][j - 1].state == PWHITE || OneCell[ypos][j - 1].state == DWHITE)
 								{
 									blcount++;
 									horizontal[ypos][hindex - blcount] = blsize;
@@ -176,7 +190,7 @@ int main()
 							if (OneCell[i][xpos].state == DBLACK)
 							{
 								blsize++;
-								if (OneCell[i - 1][xpos].state == PWHITE || OneCell[i - 1][xpos].state == DWHITE || i == 0)
+								if (i == 0 || OneCell[i - 1][xpos].state == PWHITE || OneCell[i - 1][xpos].state == DWHITE)
 								{
 									blcount++;
 									vertical[vindex - blcount][xpos] = blsize;
@@ -226,8 +240,7 @@ int main()
 						{
 							for (int j = 0; j < width; j++)
 							{
-								std::cout << vertical[i][j];
-								std::cout << " ";
+								std::cout << vertical[i][j] << " ";
 							}
 							std::cout << "\n";
 						}
@@ -237,8 +250,7 @@ int main()
 						{
 							for (int j = hstart; j < hindex; j++)
 							{
-								std::cout << horizontal[i][j];
-								std::cout << " ";
+								std::cout << horizontal[i][j] << " ";
 							}
 							std::cout << "\n";
 						}
