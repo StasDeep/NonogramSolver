@@ -1,12 +1,28 @@
 /*
- * Field with Vertical and Horizontal Counter of Blocks.
- * Console output without useless zero lines and columns.
- * Added dynamic array.
+ * Field.
+ * Nongram Class is added.
+ * Code is easy to understand due to 
+ * bunch of Nonogram Class methods.
  */
 
 #include "stdafx.h"
 #include <iostream>
-#include <SFML/Graphics.hpp>
+#include <SFML\Graphics.hpp>
+#include <SFML\System.hpp> 
+#include <SFML\Window.hpp>
+
+/* Initialize dynamic 2D array of integer numbers. */
+int **CreateArr(int m, int n)
+{
+	int **arr = new int *[m];
+	for (int i = 0; i < m; i++)
+		arr[i] = new int[n];
+	for (int i = 0; i < m; i++)
+		for (int j = 0; j < n; j++)
+			arr[i][j] = 0;
+	return arr;
+}
+
 
 enum color
 {
@@ -22,11 +38,6 @@ class Cell
 public:
 	Sprite cellsprite;
 	color state;
-
-	void CellPos(int x, int y)
-	{	
-		cellsprite.setPosition(x, y);
-	}
 	
 	void ChangeState(int butt)
 	{
@@ -55,11 +66,11 @@ public:
 		}
 
 		case 2:
-			{
-				cellsprite.setTextureRect(IntRect(0, 0, 32, 32));
-				state = PWHITE;
-				break;
-			}
+		{
+			cellsprite.setTextureRect(IntRect(0, 0, 32, 32));
+			state = PWHITE;
+			break;
+		}
 
 		default:		
 			break;
@@ -68,58 +79,184 @@ public:
 	}
 };
 
-int main()
+class Nonogram
 {
-	int width = 15;
-	int height = 15;
+public:
+	int width;
+	int height;
+	int hindex;			/* Maximum amount of horizontal blocks. */
+	int vindex;			/* Maximum amount of vertical blocks. */
+	Cell **cellarr;		/* Array of cells. */
+	int **horizontal;	/* Description of horizontal blocks. */
+	int **vertical;		/* Description of vertical blocks. */
+	int hstart;			/* Amount of empty columns in the desctription. */
+	int vstart;			/* Amount of empty lines in the desctription. */
+	Texture celltex;	/* Texture with an image, containing all states. */
 
-	/* Create a window. */
-	RenderWindow window(sf::VideoMode(width*32, height*32), "Field", Style::Close);	
-	
-	/* Create a texture for sprite. */
-	Texture celltex;
-	celltex.loadFromFile("images/cells.jpg"); 
-
-	/* Create a grid of cells. */
-	Cell **OneCell = new Cell *[height];
-	for (int i = 0; i < height; i++)
-		OneCell[i] = new Cell [width];
-
-	/* Set cells' own position, texture and state. */
-	for (int i = 0; i < height; i++)
+	/* Create an array of cells. */
+	void CreateField()
 	{
-		for (int j = 0; j < width; j++)
+		cellarr = new Cell *[height];
+		for (int i = 0; i < height; i++)
+			cellarr[i] = new Cell[width];
+	}
+
+	/* Initialize array with the description of lines and columns. */
+	void CreateDescription()
+	{
+		hindex = (width + 1) / 2;
+		vindex = (height + 1) / 2;
+		horizontal = CreateArr(height, hindex);
+		vertical = CreateArr(vindex, width);
+	}
+
+	/* Reset the description of the line and the column. */
+	void ResetDescription(int xpos, int ypos)
+	{
+		for (int j = 0; j < hindex; j++)
+			horizontal[ypos][j] = 0;
+		for (int i = 0; i < vindex; i++)
+			vertical[i][xpos] = 0;
+	}
+
+	/* Walk through blocks, counting their amount and size. */
+	void UpdateDescription(int xpos, int ypos)
+	{
+		int blcount = 0;	/* Amount of blocks in a line/column. */
+		int blsize = 0;		/* Amount of black cells in a block. */
+
+		/* Walk through horizontal blocks. */
+		for (int j = width - 1; j >= 0; j--)
 		{
-		OneCell[i][j].CellPos(j * 32, i * 32);
-		OneCell[i][j].cellsprite.setTexture(celltex);
-		OneCell[i][j].ChangeState(2);
+			if (cellarr[ypos][j].state == DBLACK)
+			{
+				blsize++;
+				if (j == 0 || cellarr[ypos][j - 1].state == PWHITE || cellarr[ypos][j - 1].state == DWHITE)
+				{
+					blcount++;
+					horizontal[ypos][hindex - blcount] = blsize;
+					blsize = 0;
+				}
+			}
+		}
+
+		blcount = 0;
+		blsize = 0;
+
+		/* Walk through vertical blocks. */
+		for (int i = height - 1; i >= 0; i--)
+		{
+			if (cellarr[i][xpos].state == DBLACK)
+			{
+				blsize++;
+				if (i == 0 || cellarr[i - 1][xpos].state == PWHITE || cellarr[i - 1][xpos].state == DWHITE)
+				{
+					blcount++;
+					vertical[vindex - blcount][xpos] = blsize;
+					blsize = 0;
+				}
+			}
 		}
 	}
 
+	/* Count the amount of empty lines and columns in the description. */
+	void CountEmptyDescription()
+	{
+		vstart = 0;
+		hstart = 0;
 
-	/* Create an array with nonogram description of horizontal blocks.*/
-	int hindex = (width + 1) / 2;
+		/* Count the amount of empty lines in vertical blocks description. */		
+		for (int i = 0; i < vindex; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				if (vertical[i][j] != 0)
+					break;
+				else
+					if (j == width - 1)
+						vstart++;
+			}
+			if (vstart != i + 1)
+				break;
+		}
 
-	int **horizontal = new int *[height];
-	for (int i = 0; i < height; i++)
-		horizontal[i] = new int[hindex];
-
-	for (int i = 0; i < height; i++)
+		/* Count the amount of empty columns in horizontal blocks description. */
 		for (int j = 0; j < hindex; j++)
-			horizontal[i][j] = 0;
+		{
+			for (int i = 0; i < height; i++)
+			{
+				if (horizontal[i][j] != 0)
+					break;
+				else
+					if (i == height - 1)
+						hstart++;
+			}
+			if (hstart != j + 1)
+				break;
+		}
+	}
+
+	/* Show the description in console. */
+	void ShowDescription()
+	{
+		system("cls");
+		/* Show vertical blocks. */
+		for (int i = vstart; i < vindex; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				std::cout << vertical[i][j] << " ";
+			}
+			std::cout << "\n";
+		}
+		std::cout << "-\n";
+		/* Show horizontal blocks. */
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = hstart; j < hindex; j++)
+			{
+				std::cout << horizontal[i][j] << " ";
+			}
+			std::cout << "\n";
+		}
+	}
+
+	void SetCells()
+	{
+		celltex.loadFromFile("images/cells.jpg");
+
+		/* Set cells' own position, texture and state. */
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				cellarr[i][j].cellsprite.setPosition(j * 32, i * 32);
+				cellarr[i][j].cellsprite.setTexture(celltex);
+				cellarr[i][j].ChangeState(2);
+			}
+		}
+	}
+};
 
 
-	/* Create an array with nonogram description of vertical blocks.*/
-	int vindex = (height + 1) / 2;
+int main()
+{
+	/*
+	 * X and Y coordinates of the mouse click 
+	 * relatively to the window.
+	 */
+	int xpos;	
+	int ypos;
 
-	int **vertical = new int *[vindex];
-	for (int i = 0; i < vindex; i++)
-		vertical[i] = new int[width];
+	Nonogram Field;
+	Field.width = 15;
+	Field.height = 15;
+	Field.CreateField();
+	Field.SetCells();
+	Field.CreateDescription();
 
-	for (int i = 0; i < vindex; i++)
-		for (int j = 0; j < width; j++)
-			vertical[i][j] = 0;	
-
+	/* Create a window. */
+	RenderWindow window(VideoMode(Field.width*32, Field.height*32), "Field", Style::Close);		
 
 	/* 
 	 * Main cycle. 
@@ -137,141 +274,40 @@ int main()
 				window.close();
 				break;
 
-			case Event::MouseButtonPressed:
-			{
-				int xpos = Mouse::getPosition(window).x / 32;
-				int ypos = Mouse::getPosition(window).y / 32;
-				
-				/* As the "button" is enumeration, we send 0 if Left and 1 if Right. */
-				OneCell[ypos][xpos].ChangeState(event.mouseButton.button);
+			case Event::MouseButtonPressed:			
+				xpos = Mouse::getPosition(window).x / 32;
+				ypos = Mouse::getPosition(window).y / 32;
 
-				/* Change the description of the line and the column.*/
-				{
-					/* Reset the description of the line and the column. */
-					{
-						/* Reset the line description. */
-						for (int j = 0; j < hindex; j++)
-						{
-							horizontal[ypos][j] = 0;
-						}
-						/* Reset the column description. */
-						for (int i = 0; i < vindex; i++)
-						{
-							vertical[i][xpos] = 0;
-						}
-					}
-
-					/* Walk through blocks, counting their amount and size. */
-					{
-						int blcount = 0; /* Amount of blocks in a line/column. */
-						int blsize = 0; /* Amount of black cell in a block. */
-
-						/* Walk through horizontal blocks. */
-						for (int j = width - 1; j >= 0; j--)
-						{
-							if (OneCell[ypos][j].state == DBLACK)
-							{
-								blsize++;
-								if (j == 0 || OneCell[ypos][j - 1].state == PWHITE || OneCell[ypos][j - 1].state == DWHITE)
-								{
-									blcount++;
-									horizontal[ypos][hindex - blcount] = blsize;
-									blsize = 0;
-								}
-							}
-						}
-
-						blcount = 0;
-						blsize = 0;
-
-						/* Walk through vertical blocks. */
-						for (int i = height - 1; i >= 0; i--)
-						{
-							if (OneCell[i][xpos].state == DBLACK)
-							{
-								blsize++;
-								if (i == 0 || OneCell[i - 1][xpos].state == PWHITE || OneCell[i - 1][xpos].state == DWHITE)
-								{
-									blcount++;
-									vertical[vindex - blcount][xpos] = blsize;
-									blsize = 0;
-								}
-							}
-						}
-					}
+				/* 
+				 * As the "button" is enumeration, 
+				 * 0 is sent if Left, 
+				 * 1 is sent if Right, 
+				 * 2 if Middle button is pressed. 
+				 */
+				Field.cellarr[ypos][xpos].ChangeState(event.mouseButton.button);
 					
-					/* Count the amount of empty lines in vertical blocks description. */
-					int vstart = 0;
-					for (int i = 0; i < vindex; i++)
-					{
-						for (int j = 0; j < width; j++)
-						{
-							if (vertical[i][j] != 0)
-								break;
-							else
-								if (j == width - 1)
-									vstart++;
-						}
-						if (vstart != i + 1)
-							break;
-					}
-
-					/* Count the amount of empty columns in horizontal blocks description. */
-					int hstart = 0;
-					for (int j = 0; j < hindex; j++)
-					{
-						for (int i = 0; i < height; i++)
-						{
-							if (horizontal[i][j] != 0)
-								break;
-							else
-								if (i == height - 1)
-									hstart++;
-						}
-						if (hstart != j + 1)
-							break;
-					}					
-					
-					/* Show blocks. */
-					{
-						system("cls");
-						/* Show vertical blocks. */
-						for (int i = vstart; i < vindex; i++)
-						{
-							for (int j = 0; j < width; j++)
-							{
-								std::cout << vertical[i][j] << " ";
-							}
-							std::cout << "\n";
-						}
-						std::cout << "-\n";
-						/* Show horizontal blocks. */
-						for (int i = 0; i < height; i++)
-						{
-							for (int j = hstart; j < hindex; j++)
-							{
-								std::cout << horizontal[i][j] << " ";
-							}
-							std::cout << "\n";
-						}
-					}
-				}
+				Field.ResetDescription(xpos, ypos);
+				Field.UpdateDescription(xpos, ypos);
+				Field.CountEmptyDescription();
+				Field.ShowDescription();				
 				break;
-			}
+			
 			
 			default:
 				break;
+
 			} /* Switch end. */
+
 		} /* Event cycle end. */
 
 		window.clear();		
 		
 		/* Draw the field. */
-		for (int i = 0; i < height; i++)
+		for (int i = 0; i < Field.height; i++)
 		{
-			for (int j = 0; j < width; j++)
+			for (int j = 0; j < Field.width; j++)
 			{
-				window.draw(OneCell[i][j].cellsprite);
+				window.draw(Field.cellarr[i][j].cellsprite);
 			}
 		}		
 		
