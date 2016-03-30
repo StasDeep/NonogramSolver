@@ -1,8 +1,6 @@
 /*
  * Field.
- * Nongram Class is added.
- * Code is easy to understand due to 
- * bunch of Nonogram Class methods.
+ * Now the program can set the size of the cell.
  */
 
 #include "stdafx.h"
@@ -84,6 +82,7 @@ class Nonogram
 public:
 	int width;
 	int height;
+	int cellsize;
 	int hindex;			/* Maximum amount of horizontal blocks. */
 	int vindex;			/* Maximum amount of vertical blocks. */
 	Cell **cellarr;		/* Array of cells. */
@@ -224,14 +223,16 @@ public:
 	void SetCells()
 	{
 		celltex.loadFromFile("images/cells.jpg");
+		celltex.setSmooth(true);
 
 		/* Set cells' own position, texture and state. */
 		for (int i = 0; i < height; i++)
 		{
 			for (int j = 0; j < width; j++)
 			{
-				cellarr[i][j].cellsprite.setPosition(j * 32, i * 32);
+				cellarr[i][j].cellsprite.setPosition(j * cellsize, i * cellsize);
 				cellarr[i][j].cellsprite.setTexture(celltex);
+				cellarr[i][j].cellsprite.scale((float) cellsize / 32, (float) cellsize / 32);
 				cellarr[i][j].ChangeState(2);
 			}
 		}
@@ -249,14 +250,15 @@ int main()
 	int ypos;
 
 	Nonogram Field;
-	Field.width = 15;
-	Field.height = 15;
+	Field.width = 80;
+	Field.height = 80;
+	Field.cellsize = 10;
 	Field.CreateField();
 	Field.SetCells();
 	Field.CreateDescription();
 
 	/* Create a window. */
-	RenderWindow window(VideoMode(Field.width*32, Field.height*32), "Field", Style::Close);		
+	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);		
 
 	/* 
 	 * Main cycle. 
@@ -269,14 +271,13 @@ int main()
 		{
 			switch (event.type)
 			{
-
 			case Event::Closed:
 				window.close();
 				break;
 
 			case Event::MouseButtonPressed:			
-				xpos = Mouse::getPosition(window).x / 32;
-				ypos = Mouse::getPosition(window).y / 32;
+				xpos = Mouse::getPosition(window).x / Field.cellsize;
+				ypos = Mouse::getPosition(window).y / Field.cellsize;
 
 				/* 
 				 * As the "button" is enumeration, 
@@ -290,13 +291,11 @@ int main()
 				Field.UpdateDescription(xpos, ypos);
 				Field.CountEmptyDescription();
 				Field.ShowDescription();				
-				break;
-			
+				break;			
 			
 			default:
 				break;
-
-			} /* Switch end. */
+			}
 
 		} /* Event cycle end. */
 
