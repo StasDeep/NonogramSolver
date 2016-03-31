@@ -1,6 +1,6 @@
 /*
  * Field.
- * Now the program can set the size of the cell.
+ * Simple solving algo added.
  */
 
 #include "stdafx.h"
@@ -21,7 +21,6 @@ int **CreateArr(int m, int n)
 	return arr;
 }
 
-
 enum color
 {
 	PWHITE, /* 0 Probably White. */
@@ -36,6 +35,8 @@ class Cell
 public:
 	Sprite cellsprite;
 	color state;
+	bool black;
+	bool white;
 	
 	void ChangeState(int butt)
 	{
@@ -75,14 +76,36 @@ public:
 		
 		}
 	}
+
+	void ChangeStateSolve(color newstate)
+	{
+		switch (newstate)
+		{
+		case 0:
+			cellsprite.setTextureRect(IntRect(0, 0, 32, 32));
+			break;
+
+		case 1:
+			cellsprite.setTextureRect(IntRect(32, 0, 32, 32));
+			break;
+
+		case 2:
+			cellsprite.setTextureRect(IntRect(64, 0, 32, 32));
+			break;
+
+		default:
+			break;
+		}
+		state = newstate;
+	}
 };
 
 class Nonogram
 {
 public:
-	int width;
-	int height;
-	int cellsize;
+	int width;			/* Width of the field, in cells. */
+	int height;			/* Height of the field, in cells. */
+	int cellsize;		/* Size of the cell, in pixels. */
 	int hindex;			/* Maximum amount of horizontal blocks. */
 	int vindex;			/* Maximum amount of vertical blocks. */
 	Cell **cellarr;		/* Array of cells. */
@@ -220,12 +243,12 @@ public:
 		}
 	}
 
+	/* Set cells' own position, texture and state. */
 	void SetCells()
 	{
 		celltex.loadFromFile("images/cells.jpg");
 		celltex.setSmooth(true);
-
-		/* Set cells' own position, texture and state. */
+		
 		for (int i = 0; i < height; i++)
 		{
 			for (int j = 0; j < width; j++)
@@ -237,6 +260,68 @@ public:
 			}
 		}
 	}
+
+	bool TryBlock(int theblock /*номер блока в массиве*/, int thestart /*позиция, с которой начинается проверка*/)
+	{
+		bool result;
+
+		/* проверить, возможно ли поместить данный блок на данную позицию. */
+		for (int i = thestart; i < thestart + horizontal[0][theblock]; i++)		
+			if (cellarr[0][i].state == DWHITE)
+				return false;
+
+		if (horizontal[0][theblock - 1] == 0)
+			for (int i = 0; i < thestart; i++)
+				cellarr[0][i].white = true;
+
+		/* обработка случая, когда блок не является последним в ряду. */
+		if (theblock < hindex - 1)
+		{
+			result = false;
+
+			/* цикл начинается с самой левой позиции, соответствующей положению следующего блока, т.е. на 2 клетки правее конца текущего блока. */
+			/* цикл заканчивается на последней позиции, начиная с которой можно вставить следующий блок. */
+			for (int startnext = thestart + horizontal[0][theblock] + 1; startnext < width - horizontal[0][theblock + 1] + 1; startnext++)
+			{
+				/* небольшая оптимизация. */
+				/* если клетка, которая должна быть промежутком, оказывается черной, нет смысла продолжать перебор для этого расположения текущего блока.*/
+				if (cellarr[0][startnext].state == DBLACK)
+					break;
+
+				/* проверить расположение следующего блока для позиции startnext. */
+				if (TryBlock(theblock + 1, startnext))
+				{
+					for (int i = thestart; i < thestart + horizontal[0][theblock]; i++)
+						cellarr[0][i].black = true;
+					for (int i = thestart + horizontal[0][theblock]; i < startnext; i++)
+						cellarr[0][i].white = true;
+
+					result = true;
+				}
+			}
+
+			return result;
+		
+		}
+		else /* текущий блок - последний в ряду. */
+		{
+			for (int i = thestart + horizontal[0][theblock]; i < width + 1; i++)
+			{
+				if (cellarr[0][i].state == DBLACK)
+					return false;
+
+				for (int j = thestart; j < thestart + horizontal[0][theblock]; j++)
+					cellarr[0][j].black = true;
+				for (int j = thestart + horizontal[0][theblock]; j < width; j++)
+					cellarr[0][j].white = true;
+			}
+
+			return true;
+
+		}
+
+	}
+
 };
 
 
@@ -249,10 +334,12 @@ int main()
 	int xpos;	
 	int ypos;
 
+	int sum;
+
 	Nonogram Field;
-	Field.width = 80;
-	Field.height = 80;
-	Field.cellsize = 10;
+	Field.width = 8;
+	Field.height = 15;
+	Field.cellsize = 32;
 	Field.CreateField();
 	Field.SetCells();
 	Field.CreateDescription();
@@ -285,12 +372,66 @@ int main()
 				 * 1 is sent if Right, 
 				 * 2 if Middle button is pressed. 
 				 */
-				Field.cellarr[ypos][xpos].ChangeState(event.mouseButton.button);
-					
+				/*Field.cellarr[ypos][xpos].ChangeState(event.mouseButton.button);	
+
 				Field.ResetDescription(xpos, ypos);
 				Field.UpdateDescription(xpos, ypos);
 				Field.CountEmptyDescription();
-				Field.ShowDescription();				
+				Field.ShowDescription();	*/
+
+				/* обнулить значения флагов. */
+				for (int i = 0; i < Field.width; i++)
+				{
+					Field.cellarr[0][i].black = false;
+					Field.cellarr[0][i].white = false;
+				}
+				/* описание блоков (для проверки). */
+				Field.horizontal[0][2] = 3;
+				Field.horizontal[0][3] = 3;
+				
+
+				/* минимальное количество клеток, которые занимаются блоками и промежутками между ними. */
+				sum = 0;
+				for (int i = 0; i < Field.hindex; i++)
+				{
+					sum += Field.horizontal[0][i];
+					if (Field.horizontal[0][i] != 0)
+						sum++;
+				}
+
+				/* проверочки-проверочки. */
+				for (int i = 0; i < Field.width - sum + 2; i++)
+				{
+					if (!Field.TryBlock(2, i))
+						std::cout << "Cannot build.\n";
+				}
+				if (Field.width == sum - 2)
+					std::cout << "INCORR INPUT.\n";
+
+				/* проверка на совпадение значения в клетке во всех случаях. */
+				for (int i = 0; i < Field.width; i++)
+				{
+					std::cout << i << ". ";
+					if (Field.cellarr[0][i].white ^ Field.cellarr[0][i].black)
+					{
+						if (Field.cellarr[0][i].white)
+						{
+							Field.cellarr[0][i].ChangeStateSolve(DWHITE);
+							std::cout << "White.\n";
+
+						}
+						if (Field.cellarr[0][i].black)
+						{
+							Field.cellarr[0][i].ChangeStateSolve(DBLACK);
+							std::cout << "Black.\n";
+						}
+					}
+					else
+					{
+						std::cout << "Undef.\n";
+					}
+				}
+
 				break;			
 			
 			default:
