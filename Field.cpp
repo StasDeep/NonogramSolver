@@ -1,5 +1,6 @@
 /*
  * Field.
+ * Added Multiline Solve and File Reading.
  */
 
 #include "stdafx.h"
@@ -262,59 +263,67 @@ public:
 		}
 	}
 
-	bool TryBlock(int theblock /*номер блока в массиве*/, int thestart /*позиция, с которой начинается проверка*/)
+	/* Check each possible combination. */
+	bool TryBlock(int theblock /* Number of the block in horizontal array. */, int thestart /* Position check starts with. */, int line)
 	{
 		bool result;
 
-		/* проверить, возможно ли поместить данный блок на данную позицию. */
-		for (int i = thestart; i < thestart + horizontal[0][theblock]; i++)		
-			if (cellarr[0][i].state == DWHITE)
+		/* Check if it's possible to place the block on this position. */
+		for (int i = thestart; i < thestart + horizontal[line][theblock]; i++)
+			if (cellarr[line][i].state == DWHITE)
 				return false;
 
-		if (horizontal[0][theblock - 1] == 0)
+		/* Process the case, when the block is the first, but is placed not on the first cell. */
+		if (theblock != 0 && horizontal[line][theblock - 1] == 0)
 			for (int i = 0; i < thestart; i++)
-				cellarr[0][i].white = true;
+				cellarr[line][i].white = true;
+		if (theblock == 0)
+			for (int i = 0; i < thestart; i++)
+				cellarr[line][i].white = true;
 
-		/* обработка случая, когда блок не является последним в ряду. */
+		/* Process the case, when the block is not the last in the line. */
 		if (theblock < hindex - 1)
 		{
 			result = false;
 
-			/* цикл начинается с самой левой позиции, соответствующей положению следующего блока, т.е. на 2 клетки правее конца текущего блока. */
-			/* цикл заканчивается на последней позиции, начиная с которой можно вставить следующий блок. */
-			for (int startnext = thestart + horizontal[0][theblock] + 1; startnext < width - horizontal[0][theblock + 1] + 1; startnext++)
+			/*
+			 * Cycle starts from the very left position of the next block.
+			 * That is 2 cells to the right of the last cell of the current block.
+			 * 
+			 * Cycle ends on the last position starting from which it is possible to place the next block.
+			 */
+			for (int startnext = thestart + horizontal[line][theblock] + 1; startnext < width - horizontal[line][theblock + 1] + 1; startnext++)
 			{
-				/* небольшая оптимизация. */
-				/* если клетка, которая должна быть промежутком, оказывается черной, нет смысла продолжать перебор для этого расположения текущего блока.*/
-				if (cellarr[0][startnext].state == DBLACK)
+				/* If the gap cell is already black, there is no reason to continue checking */
+				if (cellarr[line][startnext].state == DBLACK)
 					break;
 
-				/* проверить расположение следующего блока для позиции startnext. */
-				if (TryBlock(theblock + 1, startnext))
+				/* Recurrent check of the next block on the 'startnext' position. */
+				if (TryBlock(theblock + 1, startnext, line))
 				{
-					for (int i = thestart; i < thestart + horizontal[0][theblock]; i++)
-						cellarr[0][i].black = true;
-					for (int i = thestart + horizontal[0][theblock]; i < startnext; i++)
-						cellarr[0][i].white = true;
+					for (int i = thestart; i < thestart + horizontal[line][theblock]; i++)
+						cellarr[line][i].black = true;
+					for (int i = thestart + horizontal[line][theblock]; i < startnext; i++)
+						cellarr[line][i].white = true;
 
 					result = true;
 				}
 			}
 
-			return result;
-		
+			return result;		
+
 		}
-		else /* текущий блок - последний в ряду. */
+		else /* Current block is the last. */
 		{
-			for (int i = thestart + horizontal[0][theblock]; i < width + 1; i++)
+			for (int i = thestart + horizontal[line][theblock]; i < width + 1; i++)
 			{
-				if (cellarr[0][i].state == DBLACK)
+				if (cellarr[line][i].state == DBLACK)
 					return false;
 
-				for (int j = thestart; j < thestart + horizontal[0][theblock]; j++)
-					cellarr[0][j].black = true;
-				for (int j = thestart + horizontal[0][theblock]; j < width; j++)
-					cellarr[0][j].white = true;
+				for (int j = thestart; j < thestart + horizontal[line][theblock]; j++)
+					cellarr[line][j].black = true;
+				for (int j = thestart + horizontal[line][theblock]; j < width; j++)
+					cellarr[line][j].white = true;
 			}
 
 			return true;
@@ -335,19 +344,33 @@ int main()
 	int xpos;	
 	int ypos;
 
+	/* Variables for check.*/
 	int sum;
+	int nonzero;
+
+	char answer;
 
 	Nonogram Field;
 	Field.width = 8;
-	Field.height = 15;
+	Field.height = 6;
 	Field.cellsize = 32;
 	Field.CreateField();
 	Field.SetCells();
 	Field.CreateDescription();
 
-	/* описание блоков (для проверки). */
-	Field.horizontal[0][2] = 3;
-	Field.horizontal[0][3] = 3;
+	std::cout << "Play or Solve? (p/s)\n";
+	answer = getchar();
+
+	#pragma warning (disable : 4996)
+	FILE *Descr;
+	Descr = fopen("Nonogram1.txt", "r");
+	for (int i = 0; i < Field.height; i++)
+	{
+		for (int j = 0; j < Field.hindex; j++)
+			fscanf(Descr, "%d ", &Field.horizontal[i][j]);
+	}
+	fclose(Descr);
+	
 
 	/* Create a window. */
 	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);		
@@ -367,67 +390,76 @@ int main()
 				window.close();
 				break;
 
-			case Event::MouseButtonPressed:			
+			case Event::MouseButtonPressed:
 				xpos = Mouse::getPosition(window).x / Field.cellsize;
 				ypos = Mouse::getPosition(window).y / Field.cellsize;
 
-				/* 
-				 * As the "button" is enumeration, 
-				 * 0 is sent if Left, 
-				 * 1 is sent if Right, 
-				 * 2 if Middle button is pressed. 
-				 */
-				/*Field.cellarr[ypos][xpos].ChangeState(event.mouseButton.button);	
 
-				Field.ResetDescription(xpos, ypos);
-				Field.UpdateDescription(xpos, ypos);
-				Field.CountEmptyDescription();
-				Field.ShowDescription();	*/
-
-							
-
-				/* минимальное количество клеток, которые занимаются блоками и промежутками между ними. */
-				sum = 0;
-				for (int i = 0; i < Field.hindex; i++)
+				switch (answer)
 				{
-					sum += Field.horizontal[0][i];
-					if (Field.horizontal[0][i] != 0)
-						sum++;
-				}
+				case 'p':
+					/*
+					 * As the "button" is enumeration,
+					 * 0 is sent if Left,
+					 * 1 is sent if Right,
+					 * 2 if Middle button is pressed.
+					 */
+					 Field.cellarr[ypos][xpos].ChangeState(event.mouseButton.button);
 
-				/* проверочки-проверочки. */
-				for (int i = 0; i < Field.width - sum + 2; i++)
-				{
-					if (!Field.TryBlock(2, i))
-						std::cout << "Cannot build.\n";
-				}
-				if (Field.width == sum - 2)
-					std::cout << "INCORR INPUT.\n";
+					 Field.ResetDescription(xpos, ypos);
+					 Field.UpdateDescription(xpos, ypos);
+					 Field.CountEmptyDescription();
+					 Field.ShowDescription();
+					 break;
 
-				/* проверка на совпадение значения в клетке во всех случаях. */
-				for (int i = 0; i < Field.width; i++)
-				{
-					std::cout << i << ". ";
-					if (Field.cellarr[0][i].white ^ Field.cellarr[0][i].black)
+				case 's':
+
+					for (int j = 0; j < Field.height; j++)
 					{
-						if (Field.cellarr[0][i].white)
-						{
-							Field.cellarr[0][i].ChangeStateSolve(DWHITE);
-							std::cout << "White.\n";
+						nonzero = -1;
 
-						}
-						if (Field.cellarr[0][i].black)
+						/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
+						sum = 0;
+						for (int i = 0; i < Field.hindex; i++)
 						{
-							Field.cellarr[0][i].ChangeStateSolve(DBLACK);
-							std::cout << "Black.\n";
+							sum += Field.horizontal[j][i];
+							if (Field.horizontal[j][i] != 0)
+							{
+								if (nonzero == -1)
+									nonzero = i;
+								sum++;
+							}
+						}
+
+						/* Check if it is possible to place the blocks. */
+						for (int i = 0; i < Field.width - sum + 2; i++)
+						{
+							if (!Field.TryBlock(nonzero, i, j))
+								std::cout << "Cannot build.\n";
+						}
+						if (Field.width == sum - 2)
+							std::cout << "INCORR INPUT.\n";
+
+						/* Main check. */
+						for (int i = 0; i < Field.width; i++)
+						{
+							if (Field.cellarr[j][i].white ^ Field.cellarr[j][i].black)
+							{
+								if (Field.cellarr[j][i].white)
+								{
+									Field.cellarr[j][i].ChangeStateSolve(DWHITE);
+
+								}
+								if (Field.cellarr[j][i].black)
+								{
+									Field.cellarr[j][i].ChangeStateSolve(DBLACK);
+								}
+							}
 						}
 					}
-					else
-					{
-						std::cout << "Undef.\n";
-					}
-				}
 
+					break;
+				}
 				break;			
 			
 			default:
