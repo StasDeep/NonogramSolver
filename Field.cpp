@@ -1,6 +1,5 @@
 /*
  * Field.
- * Simple solving algo added.
  */
 
 #include "stdafx.h"
@@ -257,6 +256,8 @@ public:
 				cellarr[i][j].cellsprite.setTexture(celltex);
 				cellarr[i][j].cellsprite.scale((float) cellsize / 32, (float) cellsize / 32);
 				cellarr[i][j].ChangeState(2);
+				cellarr[i][j].black = false;
+				cellarr[i][j].white = false;
 			}
 		}
 	}
@@ -344,6 +345,10 @@ int main()
 	Field.SetCells();
 	Field.CreateDescription();
 
+	/* описание блоков (для проверки). */
+	Field.horizontal[0][2] = 3;
+	Field.horizontal[0][3] = 3;
+
 	/* Create a window. */
 	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);		
 
@@ -379,16 +384,7 @@ int main()
 				Field.CountEmptyDescription();
 				Field.ShowDescription();	*/
 
-				/* обнулить значения флагов. */
-				for (int i = 0; i < Field.width; i++)
-				{
-					Field.cellarr[0][i].black = false;
-					Field.cellarr[0][i].white = false;
-				}
-				/* описание блоков (для проверки). */
-				Field.horizontal[0][2] = 3;
-				Field.horizontal[0][3] = 3;
-				
+							
 
 				/* минимальное количество клеток, которые занимаются блоками и промежутками между ними. */
 				sum = 0;
