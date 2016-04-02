@@ -1,7 +1,6 @@
 /*
  * Field.
  * New methods added.
- * Multicolumn solve (raw).
  */
 
 #include "stdafx.h"
@@ -264,6 +263,30 @@ public:
 		}
 	}
 
+	/* Read description from a file. */
+	void ReadDescription()
+	{
+		/* Read line description from a file. */
+		#pragma warning (disable : 4996)
+		FILE *Descr;
+		Descr = fopen("Nonogram1.txt", "r");
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < hindex; j++)
+				fscanf(Descr, "%d ", &horizontal[i][j]);
+		}
+		fclose(Descr);
+
+		/* Read column description from a file. */
+		Descr = fopen("Nonogram2.txt", "r");
+		for (int i = 0; i < vindex; i++)
+		{
+			for (int j = 0; j < width; j++)
+				fscanf(Descr, "%d ", &vertical[i][j]);
+		}
+		fclose(Descr);
+	}
+
 	/* Check all horizontal lines. */
 	void CheckHor()
 	{
@@ -408,7 +431,7 @@ public:
 			for (int startnext = thestart + horizontal[line][theblock] + 1; startnext < width - horizontal[line][theblock + 1] + 1; startnext++)
 			{
 				/* If the gap cell is already black, there is no reason to continue checking */
-				if (cellarr[line][startnext].state == DBLACK)
+				if (cellarr[line][startnext - 1].state == DBLACK)
 					break;
 
 				/* Recurrent check of the next block on the 'startnext' position. */
@@ -476,12 +499,12 @@ public:
 			for (int startnext = thestart + vertical[theblock][col] + 1; startnext < height - vertical[theblock + 1][col] + 1; startnext++)
 			{
 				/* If the gap cell is already black, there is no reason to continue checking */
-				if (cellarr[startnext][col].state == DBLACK)
+				if (cellarr[startnext - 1][col].state == DBLACK)
 					break;
 
 				/* Recurrent check of the next block on the 'startnext' position. */
 				if (TryVertBlock(theblock + 1, startnext, col))
-				{
+				{					
 					for (int i = thestart; i < thestart + vertical[theblock][col]; i++)
 						cellarr[i][col].black = true;
 					for (int i = thestart + vertical[theblock][col]; i < startnext; i++)
@@ -501,6 +524,7 @@ public:
 				if (cellarr[i][col].state == DBLACK)
 					return false;			
 
+			
 			for (int j = thestart; j < thestart + vertical[theblock][col]; j++)
 				cellarr[j][col].black = true;
 			for (int j = thestart + vertical[theblock][col]; j < height; j++)
@@ -546,27 +570,8 @@ int main()
 	answer = 's';
 
 	if (answer == 's')
-	{
-		/* Read a nonogram description from a file. */
-		#pragma warning (disable : 4996)
-		FILE *Descr;
-		Descr = fopen("Nonogram1.txt", "r");
-		for (int i = 0; i < Field.height; i++)
-		{
-			for (int j = 0; j < Field.hindex; j++)
-				fscanf(Descr, "%d ", &Field.horizontal[i][j]);
-		}
-		fclose(Descr);
-
-		/* Read a nonogram description from a file. */
-		Descr = fopen("Nonogram2.txt", "r");
-		for (int i = 0; i < Field.vindex; i++)
-		{
-			for (int j = 0; j < Field.width; j++)
-				fscanf(Descr, "%d ", &Field.vertical[i][j]);
-		}
-		fclose(Descr);
-	}
+		Field.ReadDescription();
+	
 
 	/* Create a window. */
 	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);		
