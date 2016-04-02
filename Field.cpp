@@ -1,6 +1,7 @@
 /*
  * Field.
- * Added Multiline Solve and File Reading.
+ * New methods added.
+ * Multicolumn solve (raw).
  */
 
 #include "stdafx.h"
@@ -263,8 +264,120 @@ public:
 		}
 	}
 
-	/* Check each possible combination. */
-	bool TryBlock(int theblock /* Number of the block in horizontal array. */, int thestart /* Position check starts with. */, int line)
+	/* Check all horizontal lines. */
+	void CheckHor()
+	{
+		int sum;
+		int nonzero;
+		for (int j = 0; j < height; j++)
+		{
+			for (int i = 0; i < width; i++)
+			{
+				cellarr[j][i].white = false;
+				cellarr[j][i].black = false;
+			}
+
+			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
+			/* Nonzero is a number of the block, counting starts from.*/
+			sum = 0;
+			nonzero = -1;
+			for (int i = 0; i < hindex; i++)
+			{
+				sum += horizontal[j][i];
+				if (horizontal[j][i] != 0)
+				{
+					if (nonzero == -1)
+						nonzero = i;
+					sum++;
+				}
+			}
+
+			/* Check if it is possible to place the blocks. */
+			for (int i = 0; i < width - sum + 2; i++)
+			{
+				if (!TryHorBlock(nonzero, i, j))
+					std::cout << "Cannot build.\n";
+			}
+			if (width <= sum - 2)
+				std::cout << "INCORR INPUT.\n";
+
+			/* Main check. */
+			for (int i = 0; i < width; i++)
+			{
+				if (cellarr[j][i].white ^ cellarr[j][i].black)
+				{
+					if (cellarr[j][i].white)
+					{
+						cellarr[j][i].ChangeStateSolve(DWHITE);
+					}
+					if (cellarr[j][i].black)
+					{
+						cellarr[j][i].ChangeStateSolve(DBLACK);
+					}
+				}
+			}
+		}
+	}
+
+	/* Check all vertical lines. */
+	void CheckVert()
+	{
+		int sum;
+		int nonzero;
+
+		for (int j = 0; j < width; j++)
+		{
+			for (int i = 0; i < height; i++)
+			{
+				cellarr[i][j].white = false;
+				cellarr[i][j].black = false;
+			}
+
+			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
+			/* Nonzero is a number of the block, counting starts from.*/
+			sum = 0;
+			nonzero = -1;
+			for (int i = 0; i < vindex; i++)
+			{
+				sum += vertical[i][j];
+				if (vertical[i][j] != 0)
+				{
+					if (nonzero == -1)
+						nonzero = i;
+					sum++;
+				}
+			}
+
+			/* Check if it is possible to place the blocks. */
+			for (int i = 0; i < height - sum + 2; i++)
+			{
+				if (!TryVertBlock(nonzero, i, j))
+					std::cout << "Cannot build.\n";
+			}
+			if (height <= sum - 2)
+				std::cout << "INCORR INPUT.\n";
+
+			/* Main check. */
+			for (int i = 0; i < height; i++)
+			{
+				if (cellarr[i][j].white ^ cellarr[i][j].black)
+				{
+					if (cellarr[i][j].white)
+					{
+						cellarr[i][j].ChangeStateSolve(DWHITE);
+					}
+					if (cellarr[i][j].black)
+					{
+						cellarr[i][j].ChangeStateSolve(DBLACK);
+					}
+				}
+			}
+		}
+
+	}
+
+	/* Check each possible horizontal combination. */
+	bool TryHorBlock(int theblock /* Number of the block in horizontal array. */, int thestart /* Position check starts with. */, int line)
 	{
 		bool result;
 
@@ -299,7 +412,7 @@ public:
 					break;
 
 				/* Recurrent check of the next block on the 'startnext' position. */
-				if (TryBlock(theblock + 1, startnext, line))
+				if (TryHorBlock(theblock + 1, startnext, line))
 				{
 					for (int i = thestart; i < thestart + horizontal[line][theblock]; i++)
 						cellarr[line][i].black = true;
@@ -315,16 +428,83 @@ public:
 		}
 		else /* Current block is the last. */
 		{
-			for (int i = thestart + horizontal[line][theblock]; i < width + 1; i++)
-			{
+			for (int i = thestart + horizontal[line][theblock]; i < width; i++)			
 				if (cellarr[line][i].state == DBLACK)
-					return false;
+					return false;				
+			
 
-				for (int j = thestart; j < thestart + horizontal[line][theblock]; j++)
-					cellarr[line][j].black = true;
-				for (int j = thestart + horizontal[line][theblock]; j < width; j++)
-					cellarr[line][j].white = true;
+			for (int j = thestart; j < thestart + horizontal[line][theblock]; j++)
+				cellarr[line][j].black = true;
+			for (int j = thestart + horizontal[line][theblock]; j < width; j++)
+				cellarr[line][j].white = true;
+
+			return true;
+
+		}
+
+	}
+	
+	/* Check each possible vertical combination. */
+	bool TryVertBlock(int theblock, int thestart, int col)
+	{
+		bool result;
+
+		/* Check if it's possible to place the block on this position. */
+		for (int i = thestart; i < thestart + vertical[theblock][col]; i++)
+			if (cellarr[i][col].state == DWHITE)
+				return false;
+
+		/* Process the case, when the block is the first, but is placed not on the first cell. */
+		if (theblock != 0 && vertical[theblock - 1][col] == 0)
+			for (int i = 0; i < thestart; i++)
+				cellarr[i][col].white = true;
+		if (theblock == 0)
+			for (int i = 0; i < thestart; i++)
+				cellarr[i][col].white = true;
+
+		/* Process the case, when the block is not the last in the column. */
+		if (theblock < vindex - 1)
+		{
+			result = false;
+
+			/*
+			* Cycle starts from the very top of the next block.
+			* That is 2 cells down of the last cell of the current block.
+			*
+			* Cycle ends on the last position starting from which it is possible to place the next block.
+			*/
+			for (int startnext = thestart + vertical[theblock][col] + 1; startnext < height - vertical[theblock + 1][col] + 1; startnext++)
+			{
+				/* If the gap cell is already black, there is no reason to continue checking */
+				if (cellarr[startnext][col].state == DBLACK)
+					break;
+
+				/* Recurrent check of the next block on the 'startnext' position. */
+				if (TryVertBlock(theblock + 1, startnext, col))
+				{
+					for (int i = thestart; i < thestart + vertical[theblock][col]; i++)
+						cellarr[i][col].black = true;
+					for (int i = thestart + vertical[theblock][col]; i < startnext; i++)
+						cellarr[i][col].white = true;
+
+					result = true;					
+				}
 			}
+
+			return result;
+
+		}
+		else /* Current block is the last. */
+		{
+			
+			for (int i = thestart + vertical[theblock][col]; i < height; i++)			
+				if (cellarr[i][col].state == DBLACK)
+					return false;			
+
+			for (int j = thestart; j < thestart + vertical[theblock][col]; j++)
+				cellarr[j][col].black = true;
+			for (int j = thestart + vertical[theblock][col]; j < height; j++)
+				cellarr[j][col].white = true;
 
 			return true;
 
@@ -348,29 +528,45 @@ int main()
 	int sum;
 	int nonzero;
 
+	/* Play or Solve? */
 	char answer;
 
+	/* If true then click will call CheckHor. If false - CheckVert. */
+	bool click = true;
+
 	Nonogram Field;
-	Field.width = 8;
-	Field.height = 6;
+	Field.width = 5;
+	Field.height = 5;
 	Field.cellsize = 32;
 	Field.CreateField();
 	Field.SetCells();
 	Field.CreateDescription();
 
 	std::cout << "Play or Solve? (p/s)\n";
-	answer = getchar();
+	answer = 's';
 
-	#pragma warning (disable : 4996)
-	FILE *Descr;
-	Descr = fopen("Nonogram1.txt", "r");
-	for (int i = 0; i < Field.height; i++)
+	if (answer == 's')
 	{
-		for (int j = 0; j < Field.hindex; j++)
-			fscanf(Descr, "%d ", &Field.horizontal[i][j]);
+		/* Read a nonogram description from a file. */
+		#pragma warning (disable : 4996)
+		FILE *Descr;
+		Descr = fopen("Nonogram1.txt", "r");
+		for (int i = 0; i < Field.height; i++)
+		{
+			for (int j = 0; j < Field.hindex; j++)
+				fscanf(Descr, "%d ", &Field.horizontal[i][j]);
+		}
+		fclose(Descr);
+
+		/* Read a nonogram description from a file. */
+		Descr = fopen("Nonogram2.txt", "r");
+		for (int i = 0; i < Field.vindex; i++)
+		{
+			for (int j = 0; j < Field.width; j++)
+				fscanf(Descr, "%d ", &Field.vertical[i][j]);
+		}
+		fclose(Descr);
 	}
-	fclose(Descr);
-	
 
 	/* Create a window. */
 	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);		
@@ -410,53 +606,16 @@ int main()
 					 Field.UpdateDescription(xpos, ypos);
 					 Field.CountEmptyDescription();
 					 Field.ShowDescription();
+
 					 break;
 
-				case 's':
+				case 's':			
+					if (click)
+						Field.CheckHor();
+					else
+						Field.CheckVert();	
 
-					for (int j = 0; j < Field.height; j++)
-					{
-						nonzero = -1;
-
-						/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
-						sum = 0;
-						for (int i = 0; i < Field.hindex; i++)
-						{
-							sum += Field.horizontal[j][i];
-							if (Field.horizontal[j][i] != 0)
-							{
-								if (nonzero == -1)
-									nonzero = i;
-								sum++;
-							}
-						}
-
-						/* Check if it is possible to place the blocks. */
-						for (int i = 0; i < Field.width - sum + 2; i++)
-						{
-							if (!Field.TryBlock(nonzero, i, j))
-								std::cout << "Cannot build.\n";
-						}
-						if (Field.width == sum - 2)
-							std::cout << "INCORR INPUT.\n";
-
-						/* Main check. */
-						for (int i = 0; i < Field.width; i++)
-						{
-							if (Field.cellarr[j][i].white ^ Field.cellarr[j][i].black)
-							{
-								if (Field.cellarr[j][i].white)
-								{
-									Field.cellarr[j][i].ChangeStateSolve(DWHITE);
-
-								}
-								if (Field.cellarr[j][i].black)
-								{
-									Field.cellarr[j][i].ChangeStateSolve(DBLACK);
-								}
-							}
-						}
-					}
+					click = !click;				
 
 					break;
 				}
