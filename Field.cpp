@@ -321,8 +321,7 @@ public:
 			/* Check if it is possible to place the blocks. */
 			for (int i = 0; i < width - sum + 2; i++)
 			{
-				if (!TryHorBlock(nonzero, i, j))
-					std::cout << "Cannot build.\n";
+				TryHorBlock(nonzero, i, j);
 			}
 			if (width <= sum - 2)
 				std::cout << "INCORR INPUT.\n";
@@ -360,7 +359,6 @@ public:
 				cellarr[i][j].black = false;
 			}
 
-
 			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
 			/* Nonzero is a number of the block, counting starts from.*/
 			sum = 0;
@@ -379,8 +377,7 @@ public:
 			/* Check if it is possible to place the blocks. */
 			for (int i = 0; i < height - sum + 2; i++)
 			{
-				if (!TryVertBlock(nonzero, i, j))
-					std::cout << "Cannot build.\n";
+				TryVertBlock(nonzero, i, j);
 			}
 			if (height <= sum - 2)
 				std::cout << "INCORR INPUT.\n";
@@ -485,12 +482,12 @@ public:
 
 		/* Process the case, when the block is the first, but is placed not on the first cell. */
 		if ((theblock != 0 && vertical[theblock - 1][col] == 0) || theblock == 0)
-			for (int i = 0; i < thestart; i++)
-			{
+			for (int i = 0; i < thestart; i++)			
 				if (cellarr[i][col].state == DBLACK)
 					return false;
+		if ((theblock != 0 && vertical[theblock - 1][col] == 0) || theblock == 0)
+			for (int i = 0; i < thestart; i++)
 				cellarr[i][col].white = true;
-			}
 
 		/* Process the case, when the block is not the last in the column. */
 		if (theblock < vindex - 1)
@@ -599,45 +596,41 @@ int main()
 				break;
 
 			case Event::MouseButtonPressed:
-				xpos = Mouse::getPosition(window).x / Field.cellsize;
-				ypos = Mouse::getPosition(window).y / Field.cellsize;
-
-
-				switch (answer)
+				if (answer == 'p')
 				{
-				case 'p':
+					xpos = Mouse::getPosition(window).x / Field.cellsize;
+					ypos = Mouse::getPosition(window).y / Field.cellsize;
+
 					/*
 					 * As the "button" is enumeration,
 					 * 0 is sent if Left,
 					 * 1 is sent if Right,
 					 * 2 if Middle button is pressed.
 					 */
-					 Field.cellarr[ypos][xpos].ChangeState(event.mouseButton.button);
+					Field.cellarr[ypos][xpos].ChangeState(event.mouseButton.button);
 
-					 Field.ResetDescription(xpos, ypos);
-					 Field.UpdateDescription(xpos, ypos);
-					 Field.CountEmptyDescription();
-					 Field.ShowDescription();
-
-					 break;
-
-				case 's':			
-					if (click)
-						Field.CheckHor();
-					else
-						Field.CheckVert();	
-
-					click = !click;				
-
-					break;
+					Field.ResetDescription(xpos, ypos);
+					Field.UpdateDescription(xpos, ypos);
+					Field.CountEmptyDescription();
+					Field.ShowDescription();
 				}
+
 				break;			
 			
+			case Event::KeyPressed:
+				getchar();
+				break;
+
 			default:
 				break;
 			}
 
 		} /* Event cycle end. */
+
+				
+		Field.CheckHor();		
+		Field.CheckVert();
+
 
 		window.clear();		
 		
