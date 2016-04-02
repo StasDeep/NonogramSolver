@@ -1,6 +1,5 @@
 /*
  * Field.
- * New methods added.
  */
 
 #include "stdafx.h"
@@ -269,7 +268,7 @@ public:
 		/* Read line description from a file. */
 		#pragma warning (disable : 4996)
 		FILE *Descr;
-		Descr = fopen("Nonogram1.txt", "r");
+		Descr = fopen("Nonogram3.txt", "r");
 		for (int i = 0; i < height; i++)
 		{
 			for (int j = 0; j < hindex; j++)
@@ -278,7 +277,7 @@ public:
 		fclose(Descr);
 
 		/* Read column description from a file. */
-		Descr = fopen("Nonogram2.txt", "r");
+		Descr = fopen("Nonogram4.txt", "r");
 		for (int i = 0; i < vindex; i++)
 		{
 			for (int j = 0; j < width; j++)
@@ -299,6 +298,18 @@ public:
 				cellarr[j][i].white = false;
 				cellarr[j][i].black = false;
 			}
+
+			/* If all blocks in a line are placed, then make all gaps DWHITE. */
+			sum = 0;
+			for (int i = 0; i < hindex; i++)
+				sum += horizontal[j][i];
+			for (int i = 0; i < width; i++)
+				if (cellarr[j][i].state == DBLACK)
+					sum -= 1;
+			if (sum == 0)
+				for (int i = 0; i < width; i++)
+					if (cellarr[j][i].state == PWHITE)
+						cellarr[j][i].state = DWHITE;
 
 			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
 			/* Nonzero is a number of the block, counting starts from.*/
@@ -350,11 +361,25 @@ public:
 
 		for (int j = 0; j < width; j++)
 		{
+			/* Reset flags. */
 			for (int i = 0; i < height; i++)
 			{
 				cellarr[i][j].white = false;
 				cellarr[i][j].black = false;
 			}
+
+			/* If all blocks in a column are placed, then make all gaps DWHITE. */
+			sum = 0;
+			for (int i = 0; i < vindex; i++)
+				sum += vertical[i][j];
+			for (int i = 0; i < height; i++)
+				if (cellarr[i][j].state == DBLACK)
+					sum -= 1;
+			if (sum == 0)
+				for (int i = 0; i < height; i++)
+					if (cellarr[i][j].state == PWHITE)
+						cellarr[i][j].state = DWHITE;
+
 
 			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
 			/* Nonzero is a number of the block, counting starts from.*/
@@ -548,19 +573,16 @@ int main()
 	int xpos;	
 	int ypos;
 
-	/* Variables for check.*/
-	int sum;
-	int nonzero;
-
 	/* Play or Solve? */
 	char answer;
 
 	/* If true then click will call CheckHor. If false - CheckVert. */
 	bool click = true;
 
+	/* Constructing the field. */
 	Nonogram Field;
-	Field.width = 5;
-	Field.height = 5;
+	Field.width = 10;
+	Field.height = 10;
 	Field.cellsize = 32;
 	Field.CreateField();
 	Field.SetCells();
