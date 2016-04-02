@@ -293,23 +293,26 @@ public:
 		int nonzero;
 		for (int j = 0; j < height; j++)
 		{
+			/* Reset flags. */
 			for (int i = 0; i < width; i++)
 			{
 				cellarr[j][i].white = false;
 				cellarr[j][i].black = false;
-			}
-
+			}	
+			
 			/* If all blocks in a line are placed, then make all gaps DWHITE. */
 			sum = 0;
 			for (int i = 0; i < hindex; i++)
 				sum += horizontal[j][i];
 			for (int i = 0; i < width; i++)
 				if (cellarr[j][i].state == DBLACK)
-					sum -= 1;
+					sum--;
 			if (sum == 0)
 				for (int i = 0; i < width; i++)
 					if (cellarr[j][i].state == PWHITE)
-						cellarr[j][i].state = DWHITE;
+						cellarr[j][i].ChangeStateSolve(DWHITE);
+			if (sum == 0)
+				continue;
 
 			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
 			/* Nonzero is a number of the block, counting starts from.*/
@@ -374,12 +377,13 @@ public:
 				sum += vertical[i][j];
 			for (int i = 0; i < height; i++)
 				if (cellarr[i][j].state == DBLACK)
-					sum -= 1;
+					sum--;
 			if (sum == 0)
 				for (int i = 0; i < height; i++)
 					if (cellarr[i][j].state == PWHITE)
-						cellarr[i][j].state = DWHITE;
-
+						cellarr[i][j].ChangeStateSolve(DWHITE);
+			if (sum == 0)
+				continue;
 
 			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
 			/* Nonzero is a number of the block, counting starts from.*/
