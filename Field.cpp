@@ -1,5 +1,6 @@
 /*
  * Field.
+ * New methods added.
  */
 
 #include "stdafx.h"
@@ -267,7 +268,7 @@ public:
 	{
 		#pragma warning (disable : 4996)
 		FILE *Descr;
-		Descr = fopen("Nonogram14x17.txt", "r");
+		Descr = fopen("Nonogram30x42.txt", "r");
 		fscanf(Descr, "%d", &width);
 		fscanf(Descr, "%d", &height);
 		fscanf(Descr, "%d", &vstart);
@@ -416,11 +417,11 @@ public:
 		/* Process the case, when the block is the first, but is placed not on the first cell. */
 		if ((theblock != 0 && horizontal[line][theblock - 1] == 0) || theblock == 0)
 			for (int i = 0; i < thestart; i++)
-			{
 				if (cellarr[line][i].state == DBLACK)
 					return false;
+		if ((theblock != 0 && horizontal[line][theblock - 1] == 0) || theblock == 0)
+			for (int i = 0; i < thestart; i++)
 				cellarr[line][i].white = true;
-			}
 
 		/* Process the case, when the block is not the last in the line. */
 		if (theblock < hindex - 1)
@@ -568,16 +569,16 @@ int main()
 	if (answer == 's')
 		Field.ReadDescription();
 	if (answer == 'p')
-		Field.CreateDescription();
+	{
+		Field.width = 15;
+		Field.height = 15;
+		Field.CreateDescription();		
+	}
 
-	Field.cellsize = 32;
+	Field.cellsize = 16;
 	Field.CreateField();
 	Field.SetCells();
 
-	
-
-	
-	
 
 	/* Create a window. */
 	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);		
