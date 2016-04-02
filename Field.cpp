@@ -265,24 +265,26 @@ public:
 	/* Read description from a file. */
 	void ReadDescription()
 	{
-		/* Read line description from a file. */
 		#pragma warning (disable : 4996)
 		FILE *Descr;
-		Descr = fopen("Nonogram3.txt", "r");
-		for (int i = 0; i < height; i++)
-		{
-			for (int j = 0; j < hindex; j++)
-				fscanf(Descr, "%d ", &horizontal[i][j]);
-		}
-		fclose(Descr);
+		Descr = fopen("Nonogram14x17.txt", "r");
+		fscanf(Descr, "%d", &width);
+		fscanf(Descr, "%d", &height);
+		fscanf(Descr, "%d", &vstart);
+		fscanf(Descr, "%d", &hstart);
+		hindex = (width + 1) / 2;
+		vindex = (height + 1) / 2;
+		horizontal = CreateArr(height, hindex);
+		vertical = CreateArr(vindex, width);
 
-		/* Read column description from a file. */
-		Descr = fopen("Nonogram4.txt", "r");
-		for (int i = 0; i < vindex; i++)
-		{
+		for (int i = vindex - vstart; i < vindex; i++)
 			for (int j = 0; j < width; j++)
 				fscanf(Descr, "%d ", &vertical[i][j]);
-		}
+
+		for (int i = 0; i < height; i++)
+			for (int j = hindex - hstart; j < hindex; j++)
+				fscanf(Descr, "%d ", &horizontal[i][j]);
+
 		fclose(Descr);
 	}
 
@@ -300,22 +302,8 @@ public:
 				cellarr[j][i].black = false;
 			}	
 			
-			/* If all blocks in a line are placed, then make all gaps DWHITE. */
-			sum = 0;
-			for (int i = 0; i < hindex; i++)
-				sum += horizontal[j][i];
-			for (int i = 0; i < width; i++)
-				if (cellarr[j][i].state == DBLACK)
-					sum--;
-			if (sum == 0)
-				for (int i = 0; i < width; i++)
-					if (cellarr[j][i].state == PWHITE)
-						cellarr[j][i].ChangeStateSolve(DWHITE);
-			if (sum == 0)
-				continue;
-
 			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
-			/* Nonzero is a number of the block, counting starts from.*/
+			/* Nonzero is a number of the block, counting starts from. */
 			sum = 0;
 			nonzero = -1;
 			for (int i = 0; i < hindex; i++)
@@ -371,19 +359,6 @@ public:
 				cellarr[i][j].black = false;
 			}
 
-			/* If all blocks in a column are placed, then make all gaps DWHITE. */
-			sum = 0;
-			for (int i = 0; i < vindex; i++)
-				sum += vertical[i][j];
-			for (int i = 0; i < height; i++)
-				if (cellarr[i][j].state == DBLACK)
-					sum--;
-			if (sum == 0)
-				for (int i = 0; i < height; i++)
-					if (cellarr[i][j].state == PWHITE)
-						cellarr[i][j].ChangeStateSolve(DWHITE);
-			if (sum == 0)
-				continue;
 
 			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
 			/* Nonzero is a number of the block, counting starts from.*/
@@ -439,12 +414,13 @@ public:
 				return false;
 
 		/* Process the case, when the block is the first, but is placed not on the first cell. */
-		if (theblock != 0 && horizontal[line][theblock - 1] == 0)
+		if ((theblock != 0 && horizontal[line][theblock - 1] == 0) || theblock == 0)
 			for (int i = 0; i < thestart; i++)
+			{
+				if (cellarr[line][i].state == DBLACK)
+					return false;
 				cellarr[line][i].white = true;
-		if (theblock == 0)
-			for (int i = 0; i < thestart; i++)
-				cellarr[line][i].white = true;
+			}
 
 		/* Process the case, when the block is not the last in the line. */
 		if (theblock < hindex - 1)
@@ -507,12 +483,13 @@ public:
 				return false;
 
 		/* Process the case, when the block is the first, but is placed not on the first cell. */
-		if (theblock != 0 && vertical[theblock - 1][col] == 0)
+		if ((theblock != 0 && vertical[theblock - 1][col] == 0) || theblock == 0)
 			for (int i = 0; i < thestart; i++)
+			{
+				if (cellarr[i][col].state == DBLACK)
+					return false;
 				cellarr[i][col].white = true;
-		if (theblock == 0)
-			for (int i = 0; i < thestart; i++)
-				cellarr[i][col].white = true;
+			}
 
 		/* Process the case, when the block is not the last in the column. */
 		if (theblock < vindex - 1)
@@ -585,18 +562,21 @@ int main()
 
 	/* Constructing the field. */
 	Nonogram Field;
-	Field.width = 10;
-	Field.height = 10;
-	Field.cellsize = 32;
-	Field.CreateField();
-	Field.SetCells();
-	Field.CreateDescription();
 
 	std::cout << "Play or Solve? (p/s)\n";
 	answer = 's';
-
 	if (answer == 's')
 		Field.ReadDescription();
+	if (answer == 'p')
+		Field.CreateDescription();
+
+	Field.cellsize = 32;
+	Field.CreateField();
+	Field.SetCells();
+
+	
+
+	
 	
 
 	/* Create a window. */
