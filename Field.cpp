@@ -1,6 +1,6 @@
 /*
  * Field.
- * Constructor added.
+ * Decreased the number of method by uniting.
  */
 
 #include "stdafx.h"
@@ -98,6 +98,7 @@ public:
 		}
 		state = newstate;
 	}
+
 };
 
 class Nonogram
@@ -120,40 +121,48 @@ public:
 	/* Constructor. */
 	Nonogram(char answer, int size = 16, int x = 15, int y = 15 )
 	{
-		if (answer == 's')
-			ReadDescription();
-		else
+		if (answer == 'p')
 		{
 			width = x;
-			height = y;
-			CreateDescription();
+			height = y;		
+			hindex = (width + 1) / 2;
+			vindex = (height + 1) / 2;
+			horizontal = CreateArr(height, hindex);
+			vertical = CreateArr(vindex, width);
 		}
 
 		cellsize = size;
+		if (answer == 's')
+			ReadDescription();
 		CreateField();
-		SetCells();
-		CreateGrid();
 
-
-		int sum = 0;
-		for (int i = 0; i < height; i++)
-			for (int j = 0; j < hindex; j++)
-				sum += horizontal[i][j];
-
-		for (int i = 0; i < vindex; i++)
-			for (int j = 0; j < width; j++)
-				sum -= vertical[i][j];
-
-		if (sum != 0)
+		if (answer == 's')
 		{
-			std::cout << "INCORRECT INPUT.";
-			getchar();
+			int sum = 0;
+			for (int i = 0; i < height; i++)
+				for (int j = 0; j < hindex; j++)
+					sum += horizontal[i][j];
+
+			for (int i = 0; i < vindex; i++)
+				for (int j = 0; j < width; j++)
+					sum -= vertical[i][j];
+
+			if (sum != 0)
+			{
+				std::cout << "INCORRECT INPUT.";
+				getchar();
+			}
 		}
 	}
 
-	/* Create a grid with lines.*/
-	void CreateGrid()
+	/* Create an array of cells and a grid with lines.. */
+	void CreateField()
 	{
+		/* Array of cells. */
+		cellarr = new Cell *[height];
+		for (int i = 0; i < height; i++)
+			cellarr[i] = new Cell[width];
+
 		/* Horizontal lines. */
 		hline = new RectangleShape[height + 1];
 		for (int i = 0; i < height + 1; i++)
@@ -177,37 +186,68 @@ public:
 				vline[i].setSize(Vector2f(2, height * cellsize));
 			vline[i].setPosition(i *  cellsize - 1, 0);
 		}
-	}
 
-	/* Create an array of cells. */
-	void CreateField()
-	{
-		cellarr = new Cell *[height];
+		/* Set cells' texture. */
+		celltex.loadFromFile("images/cells.png");
+		celltex.setSmooth(true);
+
+		/* Set position and state of cells. */
 		for (int i = 0; i < height; i++)
-			cellarr[i] = new Cell[width];
+		{
+			for (int j = 0; j < width; j++)
+			{
+				cellarr[i][j].cellsprite.setPosition(j * cellsize, i * cellsize);
+				cellarr[i][j].cellsprite.setTexture(celltex);
+				cellarr[i][j].cellsprite.scale((float)cellsize / 32, (float)cellsize / 32);
+				cellarr[i][j].ChangeStateClick(2);
+				cellarr[i][j].black = false;
+				cellarr[i][j].white = false;
+			}
+		}
+
 	}
 
-	/* Initialize array with the description of lines and columns. */
-	void CreateDescription()
+	/* Read blocks description from a file. */
+	void ReadDescription()
 	{
+		#pragma warning (disable : 4996)					
+		FILE *Descr;
+		Descr = fopen("Nonogram30x42.txt", "r");
+		fscanf(Descr, "%d", &width);
+		fscanf(Descr, "%d", &height);
+		fscanf(Descr, "%d", &vstart);
+		fscanf(Descr, "%d", &hstart);
+
 		hindex = (width + 1) / 2;
 		vindex = (height + 1) / 2;
 		horizontal = CreateArr(height, hindex);
 		vertical = CreateArr(vindex, width);
-	}
 
-	/* Reset the description of the line and the column. */
-	void ResetDescription(int xpos, int ypos)
-	{
-		for (int j = 0; j < hindex; j++)
-			horizontal[ypos][j] = 0;
-		for (int i = 0; i < vindex; i++)
-			vertical[i][xpos] = 0;
+		/* Read vertical blocks description. */
+		for (int i = vindex - vstart; i < vindex; i++)
+			for (int j = 0; j < width; j++)
+				fscanf(Descr, "%d ", &vertical[i][j]);
+
+		/* Read horizontal blocks description. */
+		for (int i = 0; i < height; i++)
+			for (int j = hindex - hstart; j < hindex; j++)
+				fscanf(Descr, "%d ", &horizontal[i][j]);
+
+		fclose(Descr);
+				
 	}
 
 	/* Walk through blocks, counting their amount and size. */
 	void UpdateDescription(int xpos, int ypos)
 	{
+		/* Reset the description of the line and the column. */
+		{
+			for (int j = 0; j < hindex; j++)
+				horizontal[ypos][j] = 0;
+			for (int i = 0; i < vindex; i++)
+				vertical[i][xpos] = 0;
+		}
+
 		int blcount = 0;	/* Amount of blocks in a line/column. */
 		int blsize = 0;		/* Amount of black cells in a block. */
 
@@ -305,52 +345,6 @@ public:
 			}
 			std::cout << "\n";
 		}
-	}
-
-	/* Set cells' own position, texture and state. */
-	void SetCells()
-	{
-		celltex.loadFromFile("images/cells.png");
-		celltex.setSmooth(true);
-
-		for (int i = 0; i < height; i++)
-		{
-			for (int j = 0; j < width; j++)
-			{
-				cellarr[i][j].cellsprite.setPosition(j * cellsize, i * cellsize);
-				cellarr[i][j].cellsprite.setTexture(celltex);
-				cellarr[i][j].cellsprite.scale((float)cellsize / 32, (float)cellsize / 32);
-				cellarr[i][j].ChangeStateClick(2);
-				cellarr[i][j].black = false;
-				cellarr[i][j].white = false;
-			}
-		}
-	}
-
-	/* Read description from a file. */
-	void ReadDescription()
-	{
-#pragma warning (disable : 4996)
-		FILE *Descr;
-		Descr = fopen("Nonogram30x42.txt", "r");
-		fscanf(Descr, "%d", &width);
-		fscanf(Descr, "%d", &height);
-		fscanf(Descr, "%d", &vstart);
-		fscanf(Descr, "%d", &hstart);
-		hindex = (width + 1) / 2;
-		vindex = (height + 1) / 2;
-		horizontal = CreateArr(height, hindex);
-		vertical = CreateArr(vindex, width);
-
-		for (int i = vindex - vstart; i < vindex; i++)
-			for (int j = 0; j < width; j++)
-				fscanf(Descr, "%d ", &vertical[i][j]);
-
-		for (int i = 0; i < height; i++)
-			for (int j = hindex - hstart; j < hindex; j++)
-				fscanf(Descr, "%d ", &horizontal[i][j]);
-
-		fclose(Descr);
 	}
 
 	/* Check all horizontal lines. */
@@ -611,7 +605,7 @@ int main()
 {
 	int xpos;
 	int ypos;
-	char answer = 'p';	
+	char answer = 's';	
 	bool click = true;		/* If true then click will call CheckHor. If false - CheckVert. */
 	bool solved = false;
 
@@ -649,8 +643,7 @@ int main()
 					 * 2 if Middle button is pressed.
 					 */
 					Field.cellarr[ypos][xpos].ChangeStateClick(event.mouseButton.button);
-
-					Field.ResetDescription(xpos, ypos);
+					
 					Field.UpdateDescription(xpos, ypos);
 					Field.CountEmptyDescription();
 					Field.ShowDescription();
@@ -679,6 +672,7 @@ int main()
 			}
 		}
 
+		/* Draw the grid. */
 		if (!solved)
 		{
 			for (int i = 0; i < Field.height + 1; i++)
@@ -689,6 +683,7 @@ int main()
 
 		window.display();
 
+		/* Solve. */
 		if (answer == 's' && solved == false)
 		{
 			Field.CheckHor();
