@@ -1,6 +1,6 @@
 /*
  * Field.
- * New methods added.
+ * Constructor added.
  */
 
 #include "stdafx.h"
@@ -37,8 +37,8 @@ public:
 	color state;
 	bool black;
 	bool white;
-	
-	void ChangeState(int butt)
+
+	void ChangeStateClick(int butt)
 	{
 		switch (butt)
 		{
@@ -71,9 +71,9 @@ public:
 			break;
 		}
 
-		default:		
+		default:
 			break;
-		
+
 		}
 	}
 
@@ -103,17 +103,81 @@ public:
 class Nonogram
 {
 public:
-	int width;			/* Width of the field, in cells. */
-	int height;			/* Height of the field, in cells. */
-	int cellsize;		/* Size of the cell, in pixels. */
-	int hindex;			/* Maximum amount of horizontal blocks. */
-	int vindex;			/* Maximum amount of vertical blocks. */
-	Cell **cellarr;		/* Array of cells. */
-	int **horizontal;	/* Description of horizontal blocks. */
-	int **vertical;		/* Description of vertical blocks. */
-	int hstart;			/* Amount of empty columns in the desctription. */
-	int vstart;			/* Amount of empty lines in the desctription. */
-	Texture celltex;	/* Texture with an image, containing all states. */
+	int width;				/* Width of the field, in cells. */
+	int height;				/* Height of the field, in cells. */
+	int cellsize;			/* Size of the cell, in pixels. */
+	int hindex;				/* Maximum amount of horizontal blocks. */
+	int vindex;				/* Maximum amount of vertical blocks. */
+	Cell **cellarr;			/* Array of cells. */
+	int **horizontal;		/* Description of horizontal blocks. */
+	int **vertical;			/* Description of vertical blocks. */
+	int hstart;				/* Amount of empty columns in the desctription. */
+	int vstart;				/* Amount of empty lines in the desctription. */
+	Texture celltex;		/* Texture with an image, containing all states. */
+	RectangleShape *hline;	/* Array of horizontal lines for grid. */
+	RectangleShape *vline;	/* Array of vertical lines for grid. */
+
+	/* Constructor. */
+	Nonogram(char answer, int size = 16, int x = 15, int y = 15 )
+	{
+		if (answer == 's')
+			ReadDescription();
+		else
+		{
+			width = x;
+			height = y;
+			CreateDescription();
+		}
+
+		cellsize = size;
+		CreateField();
+		SetCells();
+		CreateGrid();
+
+
+		int sum = 0;
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < hindex; j++)
+				sum += horizontal[i][j];
+
+		for (int i = 0; i < vindex; i++)
+			for (int j = 0; j < width; j++)
+				sum -= vertical[i][j];
+
+		if (sum != 0)
+		{
+			std::cout << "INCORRECT INPUT.";
+			getchar();
+		}
+	}
+
+	/* Create a grid with lines.*/
+	void CreateGrid()
+	{
+		/* Horizontal lines. */
+		hline = new RectangleShape[height + 1];
+		for (int i = 0; i < height + 1; i++)
+		{
+			hline[i].setFillColor(Color(24, 24, 24, 200));
+			if (i % 5 == 0)
+				hline[i].setSize(Vector2f(width * cellsize, 3));
+			else
+				hline[i].setSize(Vector2f(width * cellsize, 2));
+			hline[i].setPosition(0, i *  cellsize - 1);
+		}
+
+		/* Vertical lines. */
+		vline = new RectangleShape[width + 1];
+		for (int i = 0; i < width + 1; i++)
+		{
+			vline[i].setFillColor(Color(24, 24, 24, 200));
+			if (i % 5 == 0)
+				vline[i].setSize(Vector2f(3, height * cellsize));
+			else
+				vline[i].setSize(Vector2f(2, height * cellsize));
+			vline[i].setPosition(i *  cellsize - 1, 0);
+		}
+	}
 
 	/* Create an array of cells. */
 	void CreateField()
@@ -147,7 +211,7 @@ public:
 		int blcount = 0;	/* Amount of blocks in a line/column. */
 		int blsize = 0;		/* Amount of black cells in a block. */
 
-		/* Walk through horizontal blocks. */
+							/* Walk through horizontal blocks. */
 		for (int j = width - 1; j >= 0; j--)
 		{
 			if (cellarr[ypos][j].state == DBLACK)
@@ -187,7 +251,7 @@ public:
 		vstart = 0;
 		hstart = 0;
 
-		/* Count the amount of empty lines in vertical blocks description. */		
+		/* Count the amount of empty lines in vertical blocks description. */
 		for (int i = 0; i < vindex; i++)
 		{
 			for (int j = 0; j < width; j++)
@@ -246,17 +310,17 @@ public:
 	/* Set cells' own position, texture and state. */
 	void SetCells()
 	{
-		celltex.loadFromFile("images/cells.jpg");
+		celltex.loadFromFile("images/cells.png");
 		celltex.setSmooth(true);
-		
+
 		for (int i = 0; i < height; i++)
 		{
 			for (int j = 0; j < width; j++)
 			{
 				cellarr[i][j].cellsprite.setPosition(j * cellsize, i * cellsize);
 				cellarr[i][j].cellsprite.setTexture(celltex);
-				cellarr[i][j].cellsprite.scale((float) cellsize / 32, (float) cellsize / 32);
-				cellarr[i][j].ChangeState(2);
+				cellarr[i][j].cellsprite.scale((float)cellsize / 32, (float)cellsize / 32);
+				cellarr[i][j].ChangeStateClick(2);
 				cellarr[i][j].black = false;
 				cellarr[i][j].white = false;
 			}
@@ -266,7 +330,7 @@ public:
 	/* Read description from a file. */
 	void ReadDescription()
 	{
-		#pragma warning (disable : 4996)
+#pragma warning (disable : 4996)
 		FILE *Descr;
 		Descr = fopen("Nonogram30x42.txt", "r");
 		fscanf(Descr, "%d", &width);
@@ -301,8 +365,8 @@ public:
 			{
 				cellarr[j][i].white = false;
 				cellarr[j][i].black = false;
-			}	
-			
+			}
+
 			/* Sum is a minimum amount of cells, used for the blocks and gaps between. */
 			/* Nonzero is a number of the block, counting starts from. */
 			sum = 0;
@@ -426,11 +490,11 @@ public:
 			result = false;
 
 			/*
-			 * Cycle starts from the very left position of the next block.
-			 * That is 2 cells to the right of the last cell of the current block.
-			 * 
-			 * Cycle ends on the last position starting from which it is possible to place the next block.
-			 */
+			* Cycle starts from the very left position of the next block.
+			* That is 2 cells to the right of the last cell of the current block.
+			*
+			* Cycle ends on the last position starting from which it is possible to place the next block.
+			*/
 			for (int startnext = thestart + horizontal[line][theblock] + 1; startnext < width - horizontal[line][theblock + 1] + 1; startnext++)
 			{
 				/* If the gap cell is already black, there is no reason to continue checking */
@@ -449,15 +513,15 @@ public:
 				}
 			}
 
-			return result;		
+			return result;
 
 		}
 		else /* Current block is the last. */
 		{
-			for (int i = thestart + horizontal[line][theblock]; i < width; i++)			
+			for (int i = thestart + horizontal[line][theblock]; i < width; i++)
 				if (cellarr[line][i].state == DBLACK)
-					return false;				
-			
+					return false;
+
 
 			for (int j = thestart; j < thestart + horizontal[line][theblock]; j++)
 				cellarr[line][j].black = true;
@@ -469,7 +533,7 @@ public:
 		}
 
 	}
-	
+
 	/* Check each possible vertical combination. */
 	bool TryVertBlock(int theblock, int thestart, int col)
 	{
@@ -482,7 +546,7 @@ public:
 
 		/* Process the case, when the block is the first, but is placed not on the first cell. */
 		if ((theblock != 0 && vertical[theblock - 1][col] == 0) || theblock == 0)
-			for (int i = 0; i < thestart; i++)			
+			for (int i = 0; i < thestart; i++)
 				if (cellarr[i][col].state == DBLACK)
 					return false;
 		if ((theblock != 0 && vertical[theblock - 1][col] == 0) || theblock == 0)
@@ -508,13 +572,13 @@ public:
 
 				/* Recurrent check of the next block on the 'startnext' position. */
 				if (TryVertBlock(theblock + 1, startnext, col))
-				{					
+				{
 					for (int i = thestart; i < thestart + vertical[theblock][col]; i++)
 						cellarr[i][col].black = true;
 					for (int i = thestart + vertical[theblock][col]; i < startnext; i++)
 						cellarr[i][col].white = true;
 
-					result = true;					
+					result = true;
 				}
 			}
 
@@ -523,12 +587,12 @@ public:
 		}
 		else /* Current block is the last. */
 		{
-			
-			for (int i = thestart + vertical[theblock][col]; i < height; i++)			
-				if (cellarr[i][col].state == DBLACK)
-					return false;			
 
-			
+			for (int i = thestart + vertical[theblock][col]; i < height; i++)
+				if (cellarr[i][col].state == DBLACK)
+					return false;
+
+
 			for (int j = thestart; j < thestart + vertical[theblock][col]; j++)
 				cellarr[j][col].black = true;
 			for (int j = thestart + vertical[theblock][col]; j < height; j++)
@@ -545,45 +609,22 @@ public:
 
 int main()
 {
-	/*
-	 * X and Y coordinates of the mouse click 
-	 * relatively to the window.
-	 */
-	int xpos;	
+	int xpos;
 	int ypos;
-
-	/* Play or Solve? */
-	char answer;
-
-	/* If true then click will call CheckHor. If false - CheckVert. */
-	bool click = true;
+	char answer = 'p';	
+	bool click = true;		/* If true then click will call CheckHor. If false - CheckVert. */
+	bool solved = false;
 
 	/* Constructing the field. */
-	Nonogram Field;
-
-	std::cout << "Play or Solve? (p/s)\n";
-	answer = 's';
-	if (answer == 's')
-		Field.ReadDescription();
-	if (answer == 'p')
-	{
-		Field.width = 15;
-		Field.height = 15;
-		Field.CreateDescription();		
-	}
-
-	Field.cellsize = 16;
-	Field.CreateField();
-	Field.SetCells();
-
+	Nonogram Field(answer);	
 
 	/* Create a window. */
-	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);		
+	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);
 
-	/* 
-	 * Main cycle. 
-	 * Works until the window is closed. 
-	 */
+	/*
+	* Main cycle.
+	* Works until the window is closed.
+	*/
 	while (window.isOpen())
 	{
 		Event event;
@@ -607,7 +648,7 @@ int main()
 					 * 1 is sent if Right,
 					 * 2 if Middle button is pressed.
 					 */
-					Field.cellarr[ypos][xpos].ChangeState(event.mouseButton.button);
+					Field.cellarr[ypos][xpos].ChangeStateClick(event.mouseButton.button);
 
 					Field.ResetDescription(xpos, ypos);
 					Field.UpdateDescription(xpos, ypos);
@@ -615,10 +656,10 @@ int main()
 					Field.ShowDescription();
 				}
 
-				break;			
-			
+				break;
+
 			case Event::KeyPressed:
-				getchar();
+				solved = true;
 				break;
 
 			default:
@@ -627,13 +668,8 @@ int main()
 
 		} /* Event cycle end. */
 
-				
-		Field.CheckHor();		
-		Field.CheckVert();
+		window.clear();
 
-
-		window.clear();		
-		
 		/* Draw the field. */
 		for (int i = 0; i < Field.height; i++)
 		{
@@ -641,10 +677,25 @@ int main()
 			{
 				window.draw(Field.cellarr[i][j].cellsprite);
 			}
-		}		
-		
+		}
+
+		if (!solved)
+		{
+			for (int i = 0; i < Field.height + 1; i++)
+				window.draw(Field.hline[i]);
+			for (int i = 0; i < Field.width + 1; i++)
+				window.draw(Field.vline[i]);
+		}
+
 		window.display();
-	}		
+
+		if (answer == 's' && solved == false)
+		{
+			Field.CheckHor();
+			Field.CheckVert();
+		}
+
+	}
 
 	return 0;
 }
