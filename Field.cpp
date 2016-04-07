@@ -1,10 +1,12 @@
 /*
  * Field.
- * New grid.
+ * Description.
  */
 
 #include "stdafx.h"
 #include <iostream>
+#include <string>
+#include <sstream>
 #include <SFML\Graphics.hpp>
 #include <SFML\System.hpp> 
 #include <SFML\Window.hpp>
@@ -19,6 +21,16 @@ int **CreateArr(int m, int n)
 		for (int j = 0; j < n; j++)
 			arr[i][j] = 0;
 	return arr;
+}
+
+/* Number to string function. */
+std::string N2S(int a)
+{
+	std::stringstream ss;
+	ss << a;
+	std::string str;
+	ss >> str;
+	return str;
 }
 
 enum color
@@ -109,14 +121,17 @@ public:
 	int cellsize;			/* Size of the cell, in pixels. */
 	int hindex;				/* Maximum amount of horizontal blocks. */
 	int vindex;				/* Maximum amount of vertical blocks. */
-	Cell **cellarr;			/* Array of cells. */
+	int hstart;				/* Amount of empty columns in the desctription. */
+	int vstart;				/* Amount of empty lines in the desctription. */	
 	int **horizontal;		/* Description of horizontal blocks. */
 	int **vertical;			/* Description of vertical blocks. */
-	int hstart;				/* Amount of empty columns in the desctription. */
-	int vstart;				/* Amount of empty lines in the desctription. */
+	Cell **cellarr;			/* Array of cells. */
 	Texture celltex;		/* Texture with an image, containing all states. */
 	RectangleShape *hline;	/* Array of horizontal lines for grid. */
 	RectangleShape *vline;	/* Array of vertical lines for grid. */
+	Text **hortext;			/* Array of numbers with horizontal blocks description. */
+	Text **vertext;			/* Array of numbers with vertical blocks description. */
+	Font font;
 
 	/* Constructor. */
 	Nonogram(char answer, int size = 16, int x = 15, int y = 15 )
@@ -130,10 +145,10 @@ public:
 			horizontal = CreateArr(height, hindex);
 			vertical = CreateArr(vindex, width);
 		}
+		else
+			ReadDescription();
 
 		cellsize = size;
-		if (answer == 's')
-			ReadDescription();
 		CreateField();
 
 		if (answer == 's')
@@ -162,13 +177,42 @@ public:
 		cellarr = new Cell *[height];
 		for (int i = 0; i < height; i++)
 			cellarr[i] = new Cell[width];
+		
+		
+		font.loadFromFile("arial.ttf");
 
-		std::cout << "Height: " << height;
-		std::cout << "\nVindex: " << vindex;
-		std::cout << "\nVstart: " << vstart;
-		std::cout << "\nWidth: " << width;
-		std::cout << "\nHindex: " << hindex;
-		std::cout << "\nHstart: " << hstart;
+		hortext = new Text *[height];
+		for (int i = 0; i < height; i++)
+			hortext[i] = new Text[hindex];
+		for (int i = 0; i < height; i++)
+			for (int j = hstart; j < hindex; j++)
+			{
+				hortext[i][j].setFont(font);
+				hortext[i][j].setCharacterSize(cellsize - cellsize / 5);
+				hortext[i][j].setColor(Color(0, 0, 0));
+				if (horizontal[i][j] < 10)
+					hortext[i][j].setPosition((j - hstart) * cellsize + cellsize / 5, (i + vindex - vstart) * cellsize);
+				else
+					hortext[i][j].setPosition((j - hstart) * cellsize, (i + vindex - vstart) * cellsize);
+				hortext[i][j].setString(N2S(horizontal[i][j]));
+			}
+			
+
+		vertext = new Text *[vindex];
+		for (int i = 0; i < vindex ; i++)
+			vertext[i] = new Text[width];
+		for (int i = vstart; i < vindex; i++)
+			for (int j = 0; j < width; j++)
+			{
+				vertext[i][j].setFont(font);
+				vertext[i][j].setCharacterSize(cellsize - cellsize / 5);
+				vertext[i][j].setColor(Color(0, 0, 0));
+				if (vertical[i][j] < 10)
+					vertext[i][j].setPosition((j + hindex - hstart) * cellsize + cellsize / 5, (i - vstart) * cellsize);
+				else
+					vertext[i][j].setPosition((j + hindex - hstart) * cellsize, (i - vstart) * cellsize);
+				vertext[i][j].setString(N2S(vertical[i][j]));
+			}
 
 		/* Horizontal lines. */
 		hline = new RectangleShape[height + vindex - vstart + 1];
@@ -235,7 +279,7 @@ public:
 	{
 		#pragma warning (disable : 4996)					
 		FILE *Descr;
-		Descr = fopen("Nonogram30x42.txt", "r");
+		Descr = fopen("Nonogram56x26.txt", "r");
 		fscanf(Descr, "%d", &width);
 		fscanf(Descr, "%d", &height);
 		fscanf(Descr, "%d", &vstart);
@@ -641,9 +685,9 @@ int main()
 	RenderWindow window(VideoMode((Field.width + Field.hindex - Field.hstart) * Field.cellsize, (Field.height + Field.vindex - Field.vstart) * Field.cellsize), "Field", Style::Close);
 
 	/*
-	* Main cycle.
-	* Works until the window is closed.
-	*/
+	 * Main cycle.
+	 * Works until the window is closed.
+	 */
 	while (window.isOpen())
 	{
 		Event event;
@@ -680,7 +724,8 @@ int main()
 				break;
 
 			case Event::KeyPressed:
-				solved = true;
+				if (event.key.code == sf::Keyboard::Space)
+					solved = true;
 				break;
 
 			default:
@@ -690,7 +735,7 @@ int main()
 		} /* Event cycle end. */
 
 		window.clear(Color(173, 173, 173));
-
+		
 		/* Draw the field. */
 		for (int i = 0; i < Field.height; i++)
 		{
@@ -700,15 +745,33 @@ int main()
 			}
 		}
 
-		/* Draw the grid. */
+		/* Draw the grid and description. */
 		if (!solved)
 		{
 			for (int i = 0; i < Field.height + Field.vindex - Field.vstart + 1; i++)
 				window.draw(Field.hline[i]);
 			for (int i = 0; i < Field.width + Field.hindex - Field.hstart + 1; i++)
 				window.draw(Field.vline[i]);
+
+			/* Horizontal description. */
+			for (int i = 0; i < Field.height; i++)
+				for (int j = Field.hstart; j < Field.hindex; j++)
+				{
+					if (Field.horizontal[i][j])
+						window.draw(Field.hortext[i][j]);
+				}
+
+			/* Vertical description. */
+			for (int i = Field.vstart; i < Field.vindex; i++)
+				for (int j = 0; j < Field.width; j++)
+				{
+					if (Field.vertical[i][j])
+						window.draw(Field.vertext[i][j]);
+				}
+
 		}
 
+		
 		window.display();
 
 		/* Solve. */
