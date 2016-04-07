@@ -1,6 +1,6 @@
 /*
  * Field.
- * Decreased the number of method by uniting.
+ * New grid.
  */
 
 #include "stdafx.h"
@@ -163,28 +163,51 @@ public:
 		for (int i = 0; i < height; i++)
 			cellarr[i] = new Cell[width];
 
+		std::cout << "Height: " << height;
+		std::cout << "\nVindex: " << vindex;
+		std::cout << "\nVstart: " << vstart;
+		std::cout << "\nWidth: " << width;
+		std::cout << "\nHindex: " << hindex;
+		std::cout << "\nHstart: " << hstart;
+
 		/* Horizontal lines. */
-		hline = new RectangleShape[height + 1];
-		for (int i = 0; i < height + 1; i++)
+		hline = new RectangleShape[height + vindex - vstart + 1];
+		for (int i = 0; i < height + vindex - vstart + 1; i++)
 		{
 			hline[i].setFillColor(Color(24, 24, 24, 200));
-			if (i % 5 == 0)
-				hline[i].setSize(Vector2f(width * cellsize, 3));
+
+			if ((i - vindex + vstart) % 5 == 0)
+				hline[i].setSize(Vector2f((width + hindex - hstart) * cellsize, 3));
 			else
+				hline[i].setSize(Vector2f((width + hindex - hstart) * cellsize, 2));
+
+			if (i < vindex - vstart)
+			{
 				hline[i].setSize(Vector2f(width * cellsize, 2));
-			hline[i].setPosition(0, i *  cellsize - 1);
+				hline[i].setPosition((hindex - hstart) * cellsize, i * cellsize - 1);
+			}				
+			else
+				hline[i].setPosition(0, i * cellsize - 1);			
 		}
 
 		/* Vertical lines. */
-		vline = new RectangleShape[width + 1];
-		for (int i = 0; i < width + 1; i++)
+		vline = new RectangleShape[width + hindex - hstart + 1];
+		for (int i = 0; i < width  + hindex - hstart + 1; i++)
 		{
 			vline[i].setFillColor(Color(24, 24, 24, 200));
-			if (i % 5 == 0)
-				vline[i].setSize(Vector2f(3, height * cellsize));
+
+			if ((i - hindex + hstart) % 5 == 0)
+				vline[i].setSize(Vector2f(3, (height + vindex - vstart) * cellsize));
 			else
+				vline[i].setSize(Vector2f(2, (height + vindex - vstart) * cellsize));
+
+			if (i < hindex - hstart)
+			{
 				vline[i].setSize(Vector2f(2, height * cellsize));
-			vline[i].setPosition(i *  cellsize - 1, 0);
+				vline[i].setPosition(i * cellsize - 1, (vindex - vstart) * cellsize);
+			}
+			else
+				vline[i].setPosition(i * cellsize - 1, 0);
 		}
 
 		/* Set cells' texture. */
@@ -196,7 +219,7 @@ public:
 		{
 			for (int j = 0; j < width; j++)
 			{
-				cellarr[i][j].cellsprite.setPosition(j * cellsize, i * cellsize);
+				cellarr[i][j].cellsprite.setPosition((j + hindex - hstart) * cellsize, (i + vindex - vstart) * cellsize);
 				cellarr[i][j].cellsprite.setTexture(celltex);
 				cellarr[i][j].cellsprite.scale((float)cellsize / 32, (float)cellsize / 32);
 				cellarr[i][j].ChangeStateClick(2);
@@ -220,17 +243,19 @@ public:
 
 		hindex = (width + 1) / 2;
 		vindex = (height + 1) / 2;
+		hstart = hindex - hstart;
+		vstart = vindex - vstart;
 		horizontal = CreateArr(height, hindex);
 		vertical = CreateArr(vindex, width);
 
 		/* Read vertical blocks description. */
-		for (int i = vindex - vstart; i < vindex; i++)
+		for (int i = vstart; i < vindex; i++)
 			for (int j = 0; j < width; j++)
 				fscanf(Descr, "%d ", &vertical[i][j]);
 
 		/* Read horizontal blocks description. */
 		for (int i = 0; i < height; i++)
-			for (int j = hindex - hstart; j < hindex; j++)
+			for (int j = hstart; j < hindex; j++)
 				fscanf(Descr, "%d ", &horizontal[i][j]);
 
 		fclose(Descr);
@@ -613,7 +638,7 @@ int main()
 	Nonogram Field(answer);	
 
 	/* Create a window. */
-	RenderWindow window(VideoMode(Field.width*Field.cellsize, Field.height*Field.cellsize), "Field", Style::Close);
+	RenderWindow window(VideoMode((Field.width + Field.hindex - Field.hstart) * Field.cellsize, (Field.height + Field.vindex - Field.vstart) * Field.cellsize), "Field", Style::Close);
 
 	/*
 	* Main cycle.
@@ -633,8 +658,11 @@ int main()
 			case Event::MouseButtonPressed:
 				if (answer == 'p')
 				{
-					xpos = Mouse::getPosition(window).x / Field.cellsize;
-					ypos = Mouse::getPosition(window).y / Field.cellsize;
+					xpos = (Mouse::getPosition(window).x - Field.hindex * Field.cellsize) / Field.cellsize;
+					ypos = (Mouse::getPosition(window).y - Field.vindex * Field.cellsize) / Field.cellsize;
+
+					if (xpos < 0 || ypos < 0)
+						break;
 
 					/*
 					 * As the "button" is enumeration,
@@ -646,7 +674,7 @@ int main()
 					
 					Field.UpdateDescription(xpos, ypos);
 					Field.CountEmptyDescription();
-					Field.ShowDescription();
+					Field.ShowDescription(); 
 				}
 
 				break;
@@ -661,7 +689,7 @@ int main()
 
 		} /* Event cycle end. */
 
-		window.clear();
+		window.clear(Color(173, 173, 173));
 
 		/* Draw the field. */
 		for (int i = 0; i < Field.height; i++)
@@ -675,9 +703,9 @@ int main()
 		/* Draw the grid. */
 		if (!solved)
 		{
-			for (int i = 0; i < Field.height + 1; i++)
+			for (int i = 0; i < Field.height + Field.vindex - Field.vstart + 1; i++)
 				window.draw(Field.hline[i]);
-			for (int i = 0; i < Field.width + 1; i++)
+			for (int i = 0; i < Field.width + Field.hindex - Field.hstart + 1; i++)
 				window.draw(Field.vline[i]);
 		}
 
