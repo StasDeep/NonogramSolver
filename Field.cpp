@@ -1,6 +1,6 @@
 /*
  * Field.
- * Description.
+ * Decreased the number of method by uniting.
  */
 
 #include "stdafx.h"
@@ -131,7 +131,7 @@ public:
 	RectangleShape *vline;	/* Array of vertical lines for grid. */
 	Text **hortext;			/* Array of numbers with horizontal blocks description. */
 	Text **vertext;			/* Array of numbers with vertical blocks description. */
-	Font font;
+	Font font;				/* Font of the description numbers. */
 
 	/* Constructor. */
 	Nonogram(char answer, int size = 16, int x = 15, int y = 15 )
@@ -177,42 +177,46 @@ public:
 		cellarr = new Cell *[height];
 		for (int i = 0; i < height; i++)
 			cellarr[i] = new Cell[width];
-		
-		
+				
 		font.loadFromFile("arial.ttf");
 
+		/* Array of numbers for drawing horizontal blocks description. */
 		hortext = new Text *[height];
-		for (int i = 0; i < height; i++)
-			hortext[i] = new Text[hindex];
-		for (int i = 0; i < height; i++)
-			for (int j = hstart; j < hindex; j++)
-			{
-				hortext[i][j].setFont(font);
-				hortext[i][j].setCharacterSize(cellsize - cellsize / 5);
-				hortext[i][j].setColor(Color(0, 0, 0));
-				if (horizontal[i][j] < 10)
-					hortext[i][j].setPosition((j - hstart) * cellsize + cellsize / 5, (i + vindex - vstart) * cellsize);
-				else
-					hortext[i][j].setPosition((j - hstart) * cellsize, (i + vindex - vstart) * cellsize);
-				hortext[i][j].setString(N2S(horizontal[i][j]));
-			}
-			
+		{
+			for (int i = 0; i < height; i++)
+				hortext[i] = new Text[hindex];
+			for (int i = 0; i < height; i++)
+				for (int j = hstart; j < hindex; j++)
+				{
+					hortext[i][j].setFont(font);
+					hortext[i][j].setCharacterSize(cellsize - cellsize / 5);
+					hortext[i][j].setColor(Color(0, 0, 0));
+					if (horizontal[i][j] < 10)
+						hortext[i][j].setPosition((j - hstart) * cellsize + cellsize / 5, (i + vindex - vstart) * cellsize);
+					else
+						hortext[i][j].setPosition((j - hstart) * cellsize, (i + vindex - vstart) * cellsize);
+					hortext[i][j].setString(N2S(horizontal[i][j]));
+				}
+		}
 
+		/* Array of numbers for drawing vertical blocks description. */
 		vertext = new Text *[vindex];
-		for (int i = 0; i < vindex ; i++)
-			vertext[i] = new Text[width];
-		for (int i = vstart; i < vindex; i++)
-			for (int j = 0; j < width; j++)
-			{
-				vertext[i][j].setFont(font);
-				vertext[i][j].setCharacterSize(cellsize - cellsize / 5);
-				vertext[i][j].setColor(Color(0, 0, 0));
-				if (vertical[i][j] < 10)
-					vertext[i][j].setPosition((j + hindex - hstart) * cellsize + cellsize / 5, (i - vstart) * cellsize);
-				else
-					vertext[i][j].setPosition((j + hindex - hstart) * cellsize, (i - vstart) * cellsize);
-				vertext[i][j].setString(N2S(vertical[i][j]));
-			}
+		{
+			for (int i = 0; i < vindex; i++)
+				vertext[i] = new Text[width];
+			for (int i = vstart; i < vindex; i++)
+				for (int j = 0; j < width; j++)
+				{
+					vertext[i][j].setFont(font);
+					vertext[i][j].setCharacterSize(cellsize - cellsize / 5);
+					vertext[i][j].setColor(Color(0, 0, 0));
+					if (vertical[i][j] < 10)
+						vertext[i][j].setPosition((j + hindex - hstart) * cellsize + cellsize / 5, (i - vstart) * cellsize);
+					else
+						vertext[i][j].setPosition((j + hindex - hstart) * cellsize, (i - vstart) * cellsize);
+					vertext[i][j].setString(N2S(vertical[i][j]));
+				}
+		}
 
 		/* Horizontal lines. */
 		hline = new RectangleShape[height + vindex - vstart + 1];
@@ -421,8 +425,37 @@ public:
 	{
 		int sum;
 		int nonzero;
+		int maxcell;		/* Length of the longest block in the line. */
+		bool emptyline;		/* True if the line is empty. */
 		for (int j = 0; j < height; j++)
 		{
+			emptyline = true;
+			
+			/* Check if the line is empty. */
+			for (int i = 0; i < width; i++)
+				if (cellarr[j][i].state != PWHITE)
+				{
+					emptyline = false;
+					break;
+				}
+			
+			/* Count if there are any intersecting blocks in the empty line. */
+			if (emptyline)
+			{
+				maxcell = 0;
+				sum = 0;
+				for (int i = 0; i < hindex; i++)
+				{
+					sum += horizontal[j][i];
+					if (horizontal[j][i] != 0)
+						sum++;
+					if (horizontal[j][i] > maxcell)
+						maxcell = horizontal[j][i];
+				}
+				if ((width - sum + 1 + maxcell) / 2 >= maxcell)
+					continue;
+			}
+
 			/* Reset flags. */
 			for (int i = 0; i < width; i++)
 			{
@@ -476,9 +509,37 @@ public:
 	{
 		int sum;
 		int nonzero;
-
+		int maxcell;		/* Length of the longest block in the line. */
+		bool emptycol;		/* True if the column is empty. */
 		for (int j = 0; j < width; j++)
 		{
+			emptycol = true;
+
+			/* Check if the column is empty. */
+			for (int i = 0; i < height; i++)
+				if (cellarr[i][j].state != PWHITE)
+				{
+					emptycol = false;
+					break;
+				}
+
+			/* Check if there are any intersecting blocks in the empty column. */
+			if (emptycol)
+			{
+				maxcell = 0;
+				sum = 0;
+				for (int i = 0; i < vindex; i++)
+				{
+					sum += vertical[i][j];
+					if (vertical[i][j] != 0)
+						sum++;
+					if (vertical[i][j] > maxcell)
+						maxcell = vertical[i][j];
+				}
+				if ((height - sum + 1 + maxcell) / 2 >= maxcell)
+					continue;
+			}
+
 			/* Reset flags. */
 			for (int i = 0; i < height; i++)
 			{
@@ -675,7 +736,6 @@ int main()
 	int xpos;
 	int ypos;
 	char answer = 's';	
-	bool click = true;		/* If true then click will call CheckHor. If false - CheckVert. */
 	bool solved = false;
 
 	/* Constructing the field. */
