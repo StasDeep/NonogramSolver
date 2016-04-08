@@ -1,6 +1,5 @@
 /*
  * Field.
- * Decreased the number of method by uniting.
  */
 
 #include "stdafx.h"
@@ -125,6 +124,8 @@ public:
 	int vstart;				/* Amount of empty lines in the desctription. */	
 	int **horizontal;		/* Description of horizontal blocks. */
 	int **vertical;			/* Description of vertical blocks. */
+	bool *hchange;			/* If true, then the line was changed by column changing. */
+	bool *vchange;			/* If true, then the column was changed by line changing. */
 	Cell **cellarr;			/* Array of cells. */
 	Texture celltex;		/* Texture with an image, containing all states. */
 	RectangleShape *hline;	/* Array of horizontal lines for grid. */
@@ -258,6 +259,14 @@ public:
 				vline[i].setPosition(i * cellsize - 1, 0);
 		}
 
+		hchange = new bool[height];
+		for (int i = 0; i < height; i++)
+			hchange[i] = true;
+
+		vchange = new bool[width];
+		for (int i = 0; i < width; i++)
+			vchange[i] = true;
+
 		/* Set cells' texture. */
 		celltex.loadFromFile("images/cells.png");
 		celltex.setSmooth(true);
@@ -313,18 +322,17 @@ public:
 	/* Walk through blocks, counting their amount and size. */
 	void UpdateDescription(int xpos, int ypos)
 	{
-		/* Reset the description of the line and the column. */
-		{
-			for (int j = 0; j < hindex; j++)
-				horizontal[ypos][j] = 0;
-			for (int i = 0; i < vindex; i++)
-				vertical[i][xpos] = 0;
-		}
+		/* Reset the description of the line and the column. */		
+		for (int j = 0; j < hindex; j++)
+			horizontal[ypos][j] = 0;
+		for (int i = 0; i < vindex; i++)
+			vertical[i][xpos] = 0;
+		
 
 		int blcount = 0;	/* Amount of blocks in a line/column. */
 		int blsize = 0;		/* Amount of black cells in a block. */
 
-							/* Walk through horizontal blocks. */
+		/* Walk through horizontal blocks. */
 		for (int j = width - 1; j >= 0; j--)
 		{
 			if (cellarr[ypos][j].state == DBLACK)
@@ -427,10 +435,16 @@ public:
 		int nonzero;
 		int maxcell;		/* Length of the longest block in the line. */
 		bool emptyline;		/* True if the line is empty. */
+		
+
 		for (int j = 0; j < height; j++)
 		{
+
+			if (hchange[j] == false)
+				continue;
+
 			emptyline = true;
-			
+
 			/* Check if the line is empty. */
 			for (int i = 0; i < width; i++)
 				if (cellarr[j][i].state != PWHITE)
@@ -439,7 +453,7 @@ public:
 					break;
 				}
 			
-			/* Count if there are any intersecting blocks in the empty line. */
+			/* Check if there are any intersecting blocks in the empty line. */
 			if (emptyline)
 			{
 				maxcell = 0;
@@ -452,8 +466,9 @@ public:
 					if (horizontal[j][i] > maxcell)
 						maxcell = horizontal[j][i];
 				}
-				if ((width - sum + 1 + maxcell) / 2 >= maxcell)
+				if ((width - sum + 1 + maxcell) / 2 >= maxcell)				
 					continue;
+				
 			}
 
 			/* Reset flags. */
@@ -479,10 +494,9 @@ public:
 			}
 
 			/* Check if it is possible to place the blocks. */
-			for (int i = 0; i < width - sum + 2; i++)
-			{
+			for (int i = 0; i < width - sum + 2; i++)			
 				TryHorBlock(nonzero, i, j);
-			}
+			
 			if (width <= sum - 2)
 				std::cout << "INCORR INPUT.\n";
 
@@ -493,15 +507,21 @@ public:
 				{
 					if (cellarr[j][i].white)
 					{
+						if (cellarr[j][i].state != DWHITE)
+							vchange[i] = true;
 						cellarr[j][i].ChangeStateSolve(DWHITE);
 					}
 					if (cellarr[j][i].black)
 					{
+						if (cellarr[j][i].state != DBLACK)
+							vchange[i] = true;
 						cellarr[j][i].ChangeStateSolve(DBLACK);
 					}
 				}
 			}
 		}
+	
+		
 	}
 
 	/* Check all vertical lines. */
@@ -513,6 +533,9 @@ public:
 		bool emptycol;		/* True if the column is empty. */
 		for (int j = 0; j < width; j++)
 		{
+			if (vchange[j] == false)
+				continue;
+
 			emptycol = true;
 
 			/* Check if the column is empty. */
@@ -536,8 +559,9 @@ public:
 					if (vertical[i][j] > maxcell)
 						maxcell = vertical[i][j];
 				}
-				if ((height - sum + 1 + maxcell) / 2 >= maxcell)
+				if ((height - sum + 1 + maxcell) / 2 >= maxcell)				
 					continue;
+				
 			}
 
 			/* Reset flags. */
@@ -563,10 +587,9 @@ public:
 			}
 
 			/* Check if it is possible to place the blocks. */
-			for (int i = 0; i < height - sum + 2; i++)
-			{
+			for (int i = 0; i < height - sum + 2; i++)			
 				TryVertBlock(nonzero, i, j);
-			}
+
 			if (height <= sum - 2)
 				std::cout << "INCORR INPUT.\n";
 
@@ -577,10 +600,14 @@ public:
 				{
 					if (cellarr[i][j].white)
 					{
+						if (cellarr[i][j].state != DWHITE)
+							hchange[i] = true;
 						cellarr[i][j].ChangeStateSolve(DWHITE);
 					}
 					if (cellarr[i][j].black)
 					{
+						if (cellarr[i][j].state != DBLACK)
+							hchange[i] = true;
 						cellarr[i][j].ChangeStateSolve(DBLACK);
 					}
 				}
@@ -737,6 +764,10 @@ int main()
 	int ypos;
 	char answer = 's';	
 	bool solved = false;
+	bool click = true;
+	Clock clock;
+	Time elapsed;
+	Time sumtime = Time::Zero;
 
 	/* Constructing the field. */
 	Nonogram Field(answer);	
@@ -780,12 +811,11 @@ int main()
 					Field.CountEmptyDescription();
 					Field.ShowDescription(); 
 				}
-
 				break;
 
 			case Event::KeyPressed:
-				if (event.key.code == sf::Keyboard::Space)
-					solved = true;
+				if (event.key.code == Keyboard::Space)
+					solved = true;				
 				break;
 
 			default:
@@ -808,6 +838,7 @@ int main()
 		/* Draw the grid and description. */
 		if (!solved)
 		{
+			/* Grid. */
 			for (int i = 0; i < Field.height + Field.vindex - Field.vstart + 1; i++)
 				window.draw(Field.hline[i]);
 			for (int i = 0; i < Field.width + Field.hindex - Field.hstart + 1; i++)
@@ -830,7 +861,6 @@ int main()
 				}
 
 		}
-
 		
 		window.display();
 
@@ -838,7 +868,11 @@ int main()
 		if (answer == 's' && solved == false)
 		{
 			Field.CheckHor();
+			for (int j = 0; j < Field.height; j++)
+				Field.hchange[j] = false;
 			Field.CheckVert();
+			for (int j = 0; j < Field.width; j++)
+				Field.vchange[j] = false;
 		}
 
 	}
