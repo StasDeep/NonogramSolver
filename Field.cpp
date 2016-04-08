@@ -1,5 +1,7 @@
 /*
  * Field.
+ * Thinner lines.
+ * Fixed playing mode.
  */
 
 #include "stdafx.h"
@@ -135,40 +137,29 @@ public:
 	Font font;				/* Font of the description numbers. */
 
 	/* Constructor. */
-	Nonogram(char answer, int size = 16, int x = 15, int y = 15 )
+	Nonogram(int size)
 	{
-		if (answer == 'p')
-		{
-			width = x;
-			height = y;		
-			hindex = (width + 1) / 2;
-			vindex = (height + 1) / 2;
-			horizontal = CreateArr(height, hindex);
-			vertical = CreateArr(vindex, width);
-		}
-		else
-			ReadDescription();
-
 		cellsize = size;
+
+		ReadDescription();
 		CreateField();
 
-		if (answer == 's')
+		/* Check for correct input. */
+		int sum = 0;
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < hindex; j++)
+				sum += horizontal[i][j];
+
+		for (int i = 0; i < vindex; i++)
+			for (int j = 0; j < width; j++)
+				sum -= vertical[i][j];
+
+		if (sum != 0)
 		{
-			int sum = 0;
-			for (int i = 0; i < height; i++)
-				for (int j = 0; j < hindex; j++)
-					sum += horizontal[i][j];
-
-			for (int i = 0; i < vindex; i++)
-				for (int j = 0; j < width; j++)
-					sum -= vertical[i][j];
-
-			if (sum != 0)
-			{
-				std::cout << "INCORRECT INPUT.";
-				getchar();
-			}
+			std::cout << "INCORRECT INPUT.";
+			getchar();
 		}
+		
 	}
 
 	/* Create an array of cells and a grid with lines.. */
@@ -226,13 +217,13 @@ public:
 			hline[i].setFillColor(Color(24, 24, 24, 200));
 
 			if ((i - vindex + vstart) % 5 == 0)
-				hline[i].setSize(Vector2f((width + hindex - hstart) * cellsize, 3));
-			else
 				hline[i].setSize(Vector2f((width + hindex - hstart) * cellsize, 2));
+			else
+				hline[i].setSize(Vector2f((width + hindex - hstart) * cellsize, 1));
 
 			if (i < vindex - vstart)
 			{
-				hline[i].setSize(Vector2f(width * cellsize, 2));
+				hline[i].setSize(Vector2f(width * cellsize, 1));
 				hline[i].setPosition((hindex - hstart) * cellsize, i * cellsize - 1);
 			}				
 			else
@@ -246,13 +237,13 @@ public:
 			vline[i].setFillColor(Color(24, 24, 24, 200));
 
 			if ((i - hindex + hstart) % 5 == 0)
-				vline[i].setSize(Vector2f(3, (height + vindex - vstart) * cellsize));
-			else
 				vline[i].setSize(Vector2f(2, (height + vindex - vstart) * cellsize));
+			else
+				vline[i].setSize(Vector2f(1, (height + vindex - vstart) * cellsize));
 
 			if (i < hindex - hstart)
 			{
-				vline[i].setSize(Vector2f(2, height * cellsize));
+				vline[i].setSize(Vector2f(1, height * cellsize));
 				vline[i].setPosition(i * cellsize - 1, (vindex - vstart) * cellsize);
 			}
 			else
@@ -292,7 +283,7 @@ public:
 	{
 		#pragma warning (disable : 4996)					
 		FILE *Descr;
-		Descr = fopen("Nonogram56x26.txt", "r");
+		Descr = fopen("Nonogram30x42.txt", "r");
 		fscanf(Descr, "%d", &width);
 		fscanf(Descr, "%d", &height);
 		fscanf(Descr, "%d", &vstart);
@@ -762,15 +753,12 @@ int main()
 {
 	int xpos;
 	int ypos;
-	char answer = 's';	
+	char answer = 'p';	
 	bool solved = false;
 	bool click = true;
-	Clock clock;
-	Time elapsed;
-	Time sumtime = Time::Zero;
 
 	/* Constructing the field. */
-	Nonogram Field(answer);	
+	Nonogram Field(16);	
 
 	/* Create a window. */
 	RenderWindow window(VideoMode((Field.width + Field.hindex - Field.hstart) * Field.cellsize, (Field.height + Field.vindex - Field.vstart) * Field.cellsize), "Field", Style::Close);
@@ -793,8 +781,8 @@ int main()
 			case Event::MouseButtonPressed:
 				if (answer == 'p')
 				{
-					xpos = (Mouse::getPosition(window).x - Field.hindex * Field.cellsize) / Field.cellsize;
-					ypos = (Mouse::getPosition(window).y - Field.vindex * Field.cellsize) / Field.cellsize;
+					xpos = (Mouse::getPosition(window).x - (Field.hindex - Field.hstart) * Field.cellsize) / Field.cellsize;
+					ypos = (Mouse::getPosition(window).y - (Field.vindex - Field.vstart) * Field.cellsize) / Field.cellsize;
 
 					if (xpos < 0 || ypos < 0)
 						break;
@@ -807,9 +795,9 @@ int main()
 					 */
 					Field.cellarr[ypos][xpos].ChangeStateClick(event.mouseButton.button);
 					
-					Field.UpdateDescription(xpos, ypos);
+					/*Field.UpdateDescription(xpos, ypos);
 					Field.CountEmptyDescription();
-					Field.ShowDescription(); 
+					Field.ShowDescription(); */
 				}
 				break;
 
@@ -836,7 +824,6 @@ int main()
 		}
 
 		/* Draw the grid and description. */
-		if (!solved)
 		{
 			/* Grid. */
 			for (int i = 0; i < Field.height + Field.vindex - Field.vstart + 1; i++)
@@ -861,7 +848,7 @@ int main()
 				}
 
 		}
-		
+				
 		window.display();
 
 		/* Solve. */
