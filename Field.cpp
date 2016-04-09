@@ -1,11 +1,15 @@
 /*
  * Field.
+ * Write description to a file.
+ * Fixed drawing.
+ * Fixed zero line/col solving.
  */
 
 #include "stdafx.h"
 #include <iostream>
-#include <string>
+#include <fstream>
 #include <sstream>
+#include <string>
 #include <SFML\Graphics.hpp>
 #include <SFML\System.hpp> 
 #include <SFML\Window.hpp>
@@ -135,6 +139,7 @@ public:
 class Nonogram
 {
 public:
+	char name[30] = "Nonograms/NewNonogram.txt";
 	int width;				/* Width of the field, in cells. */
 	int height;				/* Height of the field, in cells. */
 	int cellsize;			/* Size of the cell, in pixels. */
@@ -144,8 +149,8 @@ public:
 	int vstart;				/* Amount of empty lines in the desctription. */
 	int **horizontal;		/* Description of horizontal blocks from a file. */
 	int **vertical;			/* Description of vertical blocks from a file. */
-	int **hcurrdescr;		/* Current description of the horizontal blocks, entered by an user. */
-	int **vcurrdescr;		/* Current description of the vertical blocks, entered by an user. */
+	int **hcurrdescr;		/* Current description of the horizontal blocks, drawn by a user. */
+	int **vcurrdescr;		/* Current description of the vertical blocks, drawn by a user. */
 	bool *hchange;			/* Detects if the line has changed since last check. */
 	bool *vchange;			/* Detects if the column has changed since last check. */
 	BWCell **cellarr;		/* Array of cells. */
@@ -303,12 +308,11 @@ public:
 	void ReadDescription()
 	{
 		#pragma warning (disable: 4996)					
-		FILE *Descr;
-		Descr = fopen("Nonograms/Nonogram56x26.txt", "r");
-		fscanf(Descr, "%d", &width);
-		fscanf(Descr, "%d", &height);
-		fscanf(Descr, "%d", &vstart);
-		fscanf(Descr, "%d", &hstart);
+		std::ifstream Descr(name);
+		Descr >> width;
+		Descr >> height;
+		Descr >> vstart;
+		Descr >> hstart;
 
 		hindex = (width + 1) / 2;
 		vindex = (height + 1) / 2;
@@ -322,14 +326,14 @@ public:
 		/* Read vertical blocks description. */
 		for (int i = vstart; i < vindex; i++)
 			for (int j = 0; j < width; j++)
-				fscanf(Descr, "%d ", &vertical[i][j]);
+				Descr >> vertical[i][j];
 
 		/* Read horizontal blocks description. */
 		for (int i = 0; i < height; i++)
 			for (int j = hstart; j < hindex; j++)
-				fscanf(Descr, "%d ", &horizontal[i][j]);
+				Descr >> horizontal[i][j];
 
-		fclose(Descr);
+		Descr.close();
 
 	}
 
@@ -385,7 +389,6 @@ public:
 	{
 		int verstart = 0;
 		int horstart = 0;
-
 		/* Count the amount of empty lines in vertical blocks description. */
 		for (int i = 0; i < vindex; i++)
 		{
@@ -427,7 +430,6 @@ public:
 			std::cout << "\n";
 		}
 		std::cout << "-\n";
-
 		/* Show horizontal blocks. */
 		for (int i = 0; i < height; i++)
 		{
@@ -437,6 +439,66 @@ public:
 			}
 			std::cout << "\n";
 		}
+	}
+
+	/* Writes current description to NewNonogram.txt. */
+	void SaveDescription()
+	{
+		int verstart = 0;
+		int horstart = 0;
+		/* Count the amount of empty lines in vertical blocks description. */
+		for (int i = 0; i < vindex; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				if (vcurrdescr[i][j] != 0)
+					break;
+				else
+					if (j == width - 1)
+						verstart++;
+			}
+			if (verstart != i + 1)
+				break;
+		}
+
+		/* Count the amount of empty columns in horizontal blocks description. */
+		for (int j = 0; j < hindex; j++)
+		{
+			for (int i = 0; i < height; i++)
+			{
+				if (hcurrdescr[i][j] != 0)
+					break;
+				else
+					if (i == height - 1)
+						horstart++;
+			}
+			if (horstart != j + 1)
+				break;
+		}
+
+		/* Write current description to the new file. */
+		std::ofstream Descr;		
+		Descr.open("Nonograms/NewNonogram.txt");
+		Descr << width << " " << height << " ";
+		Descr << vindex - verstart << " " << hindex - horstart << "\n";
+
+		/* Write vertical blocks description. */
+		for (int i = verstart; i < vindex; i++)
+		{
+			for (int j = 0; j < width; j++)
+				Descr << vcurrdescr[i][j] << " ";
+			Descr << "\n";
+		}
+
+		/* Write horizontal blocks description. */
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = horstart; j < hindex; j++)
+				Descr << hcurrdescr[i][j] << " ";
+			Descr << "\n";
+		}
+		Descr.close();
+		
 	}
 
 	/* Check if the user's solving is correct. */
@@ -493,6 +555,14 @@ public:
 					if (horizontal[j][i] > maxcell)
 						maxcell = horizontal[j][i];
 				}
+
+				if (sum == 0)
+				{
+					for (int i = 0; i < width; i++)
+						cellarr[j][i].ChangeStateSolve(2);
+					continue;
+				}
+
 				if ((width - sum + 1 + maxcell) / 2 >= maxcell)
 					continue;
 
@@ -517,7 +587,11 @@ public:
 						nonzero = i;
 					sum++;
 				}
-			}
+			}			
+
+			/* If the line is empty, go to the next one. */
+			if (sum == 0)
+				continue;
 
 			/* Recursive procedure of finding each possible combination. */
 			for (int i = 0; i < width - sum + 2; i++)
@@ -583,6 +657,14 @@ public:
 					if (vertical[i][j] > maxcell)
 						maxcell = vertical[i][j];
 				}
+
+				if (sum == 0)
+				{
+					for (int i = 0; i < height; i++)
+						cellarr[i][j].ChangeStateSolve(2);
+					continue;
+				}
+
 				if ((height - sum + 1 + maxcell) / 2 >= maxcell)
 					continue;
 
@@ -608,6 +690,10 @@ public:
 					sum++;
 				}
 			}
+
+			/* If the column is empty, go to the next one. */
+			if (sum == 0)
+				continue;
 
 			/* Recursive procedure of finding each possible combination. */
 			for (int i = 0; i < height - sum + 2; i++)
@@ -784,10 +870,11 @@ int main()
 	int xpos;						/* Index of the cell being pressed. */
 	int ypos;						/* Index of the cell being pressed. */
 	int button;						/* Remembers new state of the cell. */
-	char answer = 'p';				/* Solve or Play? */
+	char answer = 's';				/* Solve or Play? */
 	bool solved = false;			/* If solved (true) it cannot be changed. */
 	bool checkifsolved = false;		/* Checks solving algo. */
 	bool mousepressed = false;		/* If true, then mouse motion should change cells' state. */
+	int count = 0;
 
 	/* Constructing the field. */
 	Nonogram Field(16);
@@ -829,7 +916,6 @@ int main()
 					button = Field.cellarr[ypos][xpos].ChangeStateClick(event.mouseButton.button);
 
 					Field.UpdateDescription(xpos, ypos);
-					//Field.ShowDescription();
 
 					if (Field.CheckUser())
 					{
@@ -850,7 +936,7 @@ int main()
 					ypos = (event.mouseMove.y - (Field.vindex - Field.vstart) * Field.cellsize) / Field.cellsize;
 					
 					/* Breaks if the click is not within the field. */
-					if (xpos < 0 || ypos < 0)
+					if (xpos < 0 || ypos < 0 || xpos >= Field.width || ypos >= Field.height)
 						break;
 
 					/* If thе cell hasn't been changed it is changed to remembered state. */
@@ -858,7 +944,6 @@ int main()
 						Field.cellarr[ypos][xpos].ChangeStateSolve(button);
 
 					Field.UpdateDescription(xpos, ypos);
-					//Field.ShowDescription();
 
 					if (Field.CheckUser())
 					{
@@ -879,6 +964,13 @@ int main()
 				/* Stop the solving. */
 				if (event.key.code == Keyboard::Space && answer == 's')
 					solved = true;
+
+				if (event.key.code == Keyboard::H)
+					Field.ShowDescription();
+
+				if (event.key.code == Keyboard::S)
+					Field.SaveDescription();
+
 				break;
 
 			default:
@@ -889,13 +981,13 @@ int main()
 
 		window.clear(Color(173, 173, 173));
 
-		/* Draw the field. */
-		for (int i = 0; i < Field.height; i++)
-			for (int j = 0; j < Field.width; j++)
-				window.draw(Field.cellarr[i][j].cellsprite);
-
-		/* Draw the grid and description. */
+		/* Draw the field, the grid and description. */
 		{
+			/* Field. */
+			for (int i = 0; i < Field.height; i++)
+				for (int j = 0; j < Field.width; j++)
+					window.draw(Field.cellarr[i][j].cellsprite);
+
 			/* Grid. */
 			for (int i = 0; i < Field.height + Field.vindex - Field.vstart + 1; i++)
 				window.draw(Field.hline[i]);
@@ -950,7 +1042,7 @@ int main()
 				solved = true;
 			}
 		}
-
+		
 	}
 
 	return 0;
