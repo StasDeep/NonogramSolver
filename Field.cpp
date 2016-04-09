@@ -1,7 +1,5 @@
 /*
  * Field.
- * Thinner lines.
- * Fixed playing mode.
  */
 
 #include "stdafx.h"
@@ -43,7 +41,7 @@ enum color
 
 using namespace sf;
 
-class Cell
+class BWCell
 {
 public:
 	Sprite cellsprite;
@@ -124,11 +122,13 @@ public:
 	int vindex;				/* Maximum amount of vertical blocks. */
 	int hstart;				/* Amount of empty columns in the desctription. */
 	int vstart;				/* Amount of empty lines in the desctription. */	
-	int **horizontal;		/* Description of horizontal blocks. */
-	int **vertical;			/* Description of vertical blocks. */
+	int **horizontal;		/* Description of horizontal blocks from a file. */
+	int **vertical;			/* Description of vertical blocks from a file. */
+	int **hcurrdescr;		/* Current description of the horizontal blocks, entered by a user. */
+	int **vcurrdescr;		/* Current description of the vertical blocks, entered by a user. */
 	bool *hchange;			/* If true, then the line was changed by column changing. */
 	bool *vchange;			/* If true, then the column was changed by line changing. */
-	Cell **cellarr;			/* Array of cells. */
+	BWCell **cellarr;		/* Array of cells. */
 	Texture celltex;		/* Texture with an image, containing all states. */
 	RectangleShape *hline;	/* Array of horizontal lines for grid. */
 	RectangleShape *vline;	/* Array of vertical lines for grid. */
@@ -166,9 +166,9 @@ public:
 	void CreateField()
 	{
 		/* Array of cells. */
-		cellarr = new Cell *[height];
+		cellarr = new BWCell *[height];
 		for (int i = 0; i < height; i++)
-			cellarr[i] = new Cell[width];
+			cellarr[i] = new BWCell[width];
 				
 		font.loadFromFile("arial.ttf");
 
@@ -259,7 +259,7 @@ public:
 			vchange[i] = true;
 
 		/* Set cells' texture. */
-		celltex.loadFromFile("images/cells.png");
+		celltex.loadFromFile("Images/cells.png");
 		celltex.setSmooth(true);
 
 		/* Set position and state of cells. */
@@ -281,9 +281,9 @@ public:
 	/* Read blocks description from a file. */
 	void ReadDescription()
 	{
-		#pragma warning (disable : 4996)					
+		#pragma warning (disable: 4996)					
 		FILE *Descr;
-		Descr = fopen("Nonogram30x42.txt", "r");
+		Descr = fopen("Nonograms/Nonogram10x10.txt", "r");
 		fscanf(Descr, "%d", &width);
 		fscanf(Descr, "%d", &height);
 		fscanf(Descr, "%d", &vstart);
@@ -295,6 +295,8 @@ public:
 		vstart = vindex - vstart;
 		horizontal = CreateArr(height, hindex);
 		vertical = CreateArr(vindex, width);
+		hcurrdescr = CreateArr(height, hindex);
+		vcurrdescr = CreateArr(vindex, width);
 
 		/* Read vertical blocks description. */
 		for (int i = vstart; i < vindex; i++)
@@ -315,9 +317,9 @@ public:
 	{
 		/* Reset the description of the line and the column. */		
 		for (int j = 0; j < hindex; j++)
-			horizontal[ypos][j] = 0;
+			hcurrdescr[ypos][j] = 0;
 		for (int i = 0; i < vindex; i++)
-			vertical[i][xpos] = 0;
+			vcurrdescr[i][xpos] = 0;
 		
 
 		int blcount = 0;	/* Amount of blocks in a line/column. */
@@ -332,7 +334,7 @@ public:
 				if (j == 0 || cellarr[ypos][j - 1].state == PWHITE || cellarr[ypos][j - 1].state == DWHITE)
 				{
 					blcount++;
-					horizontal[ypos][hindex - blcount] = blsize;
+					hcurrdescr[ypos][hindex - blcount] = blsize;
 					blsize = 0;
 				}
 			}
@@ -350,31 +352,31 @@ public:
 				if (i == 0 || cellarr[i - 1][xpos].state == PWHITE || cellarr[i - 1][xpos].state == DWHITE)
 				{
 					blcount++;
-					vertical[vindex - blcount][xpos] = blsize;
+					vcurrdescr[vindex - blcount][xpos] = blsize;
 					blsize = 0;
 				}
 			}
 		}
 	}
 
-	/* Count the amount of empty lines and columns in the description. */
-	void CountEmptyDescription()
+	/* Show the description in console. */
+	void ShowDescription()
 	{
-		vstart = 0;
-		hstart = 0;
+		int verstart = 0;
+		int horstart = 0;
 
 		/* Count the amount of empty lines in vertical blocks description. */
 		for (int i = 0; i < vindex; i++)
 		{
 			for (int j = 0; j < width; j++)
 			{
-				if (vertical[i][j] != 0)
+				if (vcurrdescr[i][j] != 0)
 					break;
 				else
 					if (j == width - 1)
-						vstart++;
+						verstart++;
 			}
-			if (vstart != i + 1)
+			if (verstart != i + 1)
 				break;
 		}
 
@@ -383,27 +385,23 @@ public:
 		{
 			for (int i = 0; i < height; i++)
 			{
-				if (horizontal[i][j] != 0)
+				if (hcurrdescr[i][j] != 0)
 					break;
 				else
 					if (i == height - 1)
-						hstart++;
+						horstart++;
 			}
-			if (hstart != j + 1)
+			if (horstart != j + 1)
 				break;
 		}
-	}
-
-	/* Show the description in console. */
-	void ShowDescription()
-	{
+		
 		system("cls");
 		/* Show vertical blocks. */
-		for (int i = vstart; i < vindex; i++)
+		for (int i = verstart; i < vindex; i++)
 		{
 			for (int j = 0; j < width; j++)
 			{
-				std::cout << vertical[i][j] << " ";
+				std::cout << vcurrdescr[i][j] << " ";
 			}
 			std::cout << "\n";
 		}
@@ -411,12 +409,29 @@ public:
 		/* Show horizontal blocks. */
 		for (int i = 0; i < height; i++)
 		{
-			for (int j = hstart; j < hindex; j++)
+			for (int j = horstart; j < hindex; j++)
 			{
-				std::cout << horizontal[i][j] << " ";
+				std::cout << hcurrdescr[i][j] << " ";
 			}
 			std::cout << "\n";
 		}
+	}
+
+	/* Check if the user's solving is correct. */
+	bool CheckUser()
+	{
+		for (int i = 0; i < vindex; i++)
+			for (int j = 0; j < width; j++)
+				if (vertical[i][j] != vcurrdescr[i][j])
+					return false;
+
+
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < hindex; j++)
+				if (horizontal[i][j] != hcurrdescr[i][j])
+					return false;
+
+		return true;
 	}
 
 	/* Check all horizontal lines. */
@@ -496,18 +511,15 @@ public:
 			{
 				if (cellarr[j][i].white ^ cellarr[j][i].black)
 				{
-					if (cellarr[j][i].white)
-					{
-						if (cellarr[j][i].state != DWHITE)
-							vchange[i] = true;
+					if (cellarr[j][i].state == PWHITE)
+						vchange[i] = true;
+
+					if (cellarr[j][i].white)											
 						cellarr[j][i].ChangeStateSolve(DWHITE);
-					}
-					if (cellarr[j][i].black)
-					{
-						if (cellarr[j][i].state != DBLACK)
-							vchange[i] = true;
+					
+					if (cellarr[j][i].black)					
 						cellarr[j][i].ChangeStateSolve(DBLACK);
-					}
+					
 				}
 			}
 		}
@@ -589,18 +601,15 @@ public:
 			{
 				if (cellarr[i][j].white ^ cellarr[i][j].black)
 				{
-					if (cellarr[i][j].white)
-					{
-						if (cellarr[i][j].state != DWHITE)
-							hchange[i] = true;
+					if (cellarr[i][j].state == PWHITE)
+						hchange[i] = true;
+
+					if (cellarr[i][j].white)								
 						cellarr[i][j].ChangeStateSolve(DWHITE);
-					}
-					if (cellarr[i][j].black)
-					{
-						if (cellarr[i][j].state != DBLACK)
-							hchange[i] = true;
+					
+					if (cellarr[i][j].black)					
 						cellarr[i][j].ChangeStateSolve(DBLACK);
-					}
+					
 				}
 			}
 		}
@@ -758,10 +767,10 @@ int main()
 	bool click = true;
 
 	/* Constructing the field. */
-	Nonogram Field(16);	
+	Nonogram Field(32);	
 
 	/* Create a window. */
-	RenderWindow window(VideoMode((Field.width + Field.hindex - Field.hstart) * Field.cellsize, (Field.height + Field.vindex - Field.vstart) * Field.cellsize), "Field", Style::Close);
+	RenderWindow window(VideoMode((Field.width + Field.hindex - Field.hstart) * Field.cellsize + 1, (Field.height + Field.vindex - Field.vstart) * Field.cellsize + 1), "Field", Style::Close);
 
 	/*
 	 * Main cycle.
@@ -779,7 +788,7 @@ int main()
 				break;
 
 			case Event::MouseButtonPressed:
-				if (answer == 'p')
+				if (answer == 'p' && solved == false)
 				{
 					xpos = (Mouse::getPosition(window).x - (Field.hindex - Field.hstart) * Field.cellsize) / Field.cellsize;
 					ypos = (Mouse::getPosition(window).y - (Field.vindex - Field.vstart) * Field.cellsize) / Field.cellsize;
@@ -795,9 +804,16 @@ int main()
 					 */
 					Field.cellarr[ypos][xpos].ChangeStateClick(event.mouseButton.button);
 					
-					/*Field.UpdateDescription(xpos, ypos);
-					Field.CountEmptyDescription();
-					Field.ShowDescription(); */
+					Field.UpdateDescription(xpos, ypos);
+					Field.ShowDescription(); 
+					
+					if (Field.CheckUser())
+					{
+						std::system("cls");
+						std::cout << "CORRECT!\nCONGRATULATIONS!";
+						solved = true;
+					}
+
 				}
 				break;
 
