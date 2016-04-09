@@ -124,8 +124,8 @@ public:
 	int vstart;				/* Amount of empty lines in the desctription. */	
 	int **horizontal;		/* Description of horizontal blocks from a file. */
 	int **vertical;			/* Description of vertical blocks from a file. */
-	int **hcurrdescr;		/* Current description of the horizontal blocks, entered by a user. */
-	int **vcurrdescr;		/* Current description of the vertical blocks, entered by a user. */
+	int **hcurrdescr;		/* Current description of the horizontal blocks, entered by an user. */
+	int **vcurrdescr;		/* Current description of the vertical blocks, entered by an user. */
 	bool *hchange;			/* If true, then the line was changed by column changing. */
 	bool *vchange;			/* If true, then the column was changed by line changing. */
 	BWCell **cellarr;		/* Array of cells. */
@@ -283,7 +283,7 @@ public:
 	{
 		#pragma warning (disable: 4996)					
 		FILE *Descr;
-		Descr = fopen("Nonograms/Nonogram10x10.txt", "r");
+		Descr = fopen("Nonograms/Nonogram56x26.txt", "r");
 		fscanf(Descr, "%d", &width);
 		fscanf(Descr, "%d", &height);
 		fscanf(Descr, "%d", &vstart);
@@ -762,12 +762,12 @@ int main()
 {
 	int xpos;
 	int ypos;
-	char answer = 'p';	
+	char answer = 's';	
 	bool solved = false;
-	bool click = true;
+	bool checkifsolved = false;
 
 	/* Constructing the field. */
-	Nonogram Field(32);	
+	Nonogram Field(16);	
 
 	/* Create a window. */
 	RenderWindow window(VideoMode((Field.width + Field.hindex - Field.hstart) * Field.cellsize + 1, (Field.height + Field.vindex - Field.vstart) * Field.cellsize + 1), "Field", Style::Close);
@@ -831,13 +831,11 @@ int main()
 		window.clear(Color(173, 173, 173));
 		
 		/* Draw the field. */
-		for (int i = 0; i < Field.height; i++)
-		{
-			for (int j = 0; j < Field.width; j++)
-			{
+		for (int i = 0; i < Field.height; i++)		
+			for (int j = 0; j < Field.width; j++)			
 				window.draw(Field.cellarr[i][j].cellsprite);
-			}
-		}
+			
+		
 
 		/* Draw the grid and description. */
 		{
@@ -876,6 +874,26 @@ int main()
 			Field.CheckVert();
 			for (int j = 0; j < Field.width; j++)
 				Field.vchange[j] = false;
+
+			checkifsolved = true;
+			for (int i = 0; i < Field.height; i++)
+			{
+				for (int j = 0; j < Field.width; j++)
+					if (Field.cellarr[i][j].state == PWHITE)
+					{
+						checkifsolved = false;
+						break;
+					}
+				if (!checkifsolved)
+					break;
+			}
+
+			if (checkifsolved)
+			{
+				std::system("cls");
+				std::cout << "CORRECT!\nCONGRATULATIONS!";
+				solved = true;
+			}
 		}
 
 	}
