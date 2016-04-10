@@ -1,8 +1,5 @@
 /*
  * Field.
- * Write description to a file.
- * Fixed drawing.
- * Fixed zero line/col solving.
  */
 
 #include "stdafx.h"
@@ -136,12 +133,19 @@ public:
 
 };
 
-class Nonogram
+class BWNonogram
 {
 public:
-	char name[30] = "Nonograms/NewNonogram.txt";
+	char name[30] = "Nonograms/Nonogram56x26.txt";
+	char answer;			/* Solve or Play? */
+	bool solved;			/* If solved (true) nonogram cannot be changed. */
+	bool mousepressed;		/* If true, then mouse motion should change cells' state. */
+	int button;				/* Remembers new state of the cell. */
+
 	int width;				/* Width of the field, in cells. */
 	int height;				/* Height of the field, in cells. */
+	int wx;					/* Width of the window. */
+	int wy;					/* Height of the window. */
 	int cellsize;			/* Size of the cell, in pixels. */
 	int hindex;				/* Maximum amount of horizontal blocks. */
 	int vindex;				/* Maximum amount of vertical blocks. */
@@ -162,12 +166,19 @@ public:
 	Font font;				/* Font of the description numbers. */
 
 	/* Constructor. */
-	Nonogram(int size)
+	BWNonogram(int size)
 	{
 		cellsize = size;
+		button = 0;
+		answer = 's';
+		solved = false;
+		mousepressed = false;
 
 		ReadDescription();
 		CreateField();
+
+		wx = (width + hindex - hstart) * cellsize + 1;
+		wy = (height + vindex - vstart) * cellsize + 1;
 
 		/* Check for correct input. */
 		int sum = 0;
@@ -519,6 +530,45 @@ public:
 		return true;
 	}
 
+	/* Call main algorithm and check if the solving is correct. */
+	bool Solve()
+	{				
+		if (answer != 's' || solved == true)
+			return false;
+
+		bool checkifsolved = true;
+
+		CheckHor();
+		for (int j = 0; j < height; j++)
+			hchange[j] = false;
+		CheckVert();
+		for (int j = 0; j < width; j++)
+			vchange[j] = false;
+
+		/* Detects solved nonogram by finding 0 PWHITE cells. */
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+				if (cellarr[i][j].state == PWHITE)
+				{
+					checkifsolved = false;
+					break;
+				}
+			if (!checkifsolved)
+				break;
+		}
+
+		if (checkifsolved)
+		{
+			std::system("cls");
+			std::cout << "CORRECT!\nCONGRATULATIONS!";
+			solved = true;
+		}
+
+		return checkifsolved;
+		
+	}
+
 	/* Check all horizontal lines. */
 	void CheckHor()
 	{
@@ -862,186 +912,148 @@ public:
 
 	}
 
+	/* Event switch case. */
+	void EventReaction(Event event)
+	{
+		int xpos, ypos;
+
+		switch (event.type)
+		{
+		case Event::MouseButtonPressed:
+			if (answer == 'p' && solved == false)
+			{
+				xpos = (event.mouseButton.x - (hindex - hstart) * cellsize) / cellsize;
+				ypos = (event.mouseButton.y - (vindex - vstart) * cellsize) / cellsize;
+
+				/* Breaks if the click is not within the field. */
+				if (xpos < 0 || ypos < 0)
+					break;
+
+				/* If mouse button has been pressed, then no cells have been changed yet. */
+				for (int i = 0; i < height; i++)
+					for (int j = 0; j < width; j++)
+						cellarr[i][j].changed = false;
+
+				/* Remember new state to change every cell under dragging cursor to this state. */
+				button = cellarr[ypos][xpos].ChangeStateClick(event.mouseButton.button);
+
+				UpdateDescription(xpos, ypos);
+
+				if (CheckUser())
+				{
+					std::system("cls");
+					std::cout << "CORRECT!\nCONGRATULATIONS!";
+					solved = true;
+				}
+
+				mousepressed = true;
+			}
+			break;
+
+		case Event::MouseMoved:
+			/* Works only when the mouse button is pressed.*/
+			if (mousepressed)
+			{
+				xpos = (event.mouseMove.x - (hindex - hstart) * cellsize) / cellsize;
+				ypos = (event.mouseMove.y - (vindex - vstart) * cellsize) / cellsize;
+
+				/* Breaks if the click is not within the field. */
+				if (xpos < 0 || ypos < 0 || xpos >= width || ypos >= height)
+					break;
+
+				/* If thе cell hasn't been changed it is changed to remembered state. */
+				if (cellarr[ypos][xpos].changed == false)
+					cellarr[ypos][xpos].ChangeStateSolve(button);
+
+				UpdateDescription(xpos, ypos);
+
+				if (CheckUser())
+				{
+					std::system("cls");
+					std::cout << "CORRECT!\nCONGRATULATIONS!";
+					solved = true;
+				}
+			}
+
+			break;
+
+		case Event::MouseButtonReleased:
+			/* If mouse button is not pressed anymore, mouse movement shouldn't cause cell change. */
+			mousepressed = false;
+			break;
+
+		case Event::KeyPressed:
+			/* Stop the solving. */
+			if (event.key.code == Keyboard::Space && answer == 's')
+				solved = true;
+
+			if (event.key.code == Keyboard::H && answer == 'p')
+				ShowDescription();
+
+			if (event.key.code == Keyboard::S && answer == 'p')
+				SaveDescription();
+
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	/* Draw field, grid and description. */
+	void Draw(RenderWindow &window)
+	{
+		/* Field. */
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < width; j++)
+				window.draw(cellarr[i][j].cellsprite);
+
+		/* Grid. */
+		for (int i = 0; i < height + vindex - vstart + 1; i++)
+			window.draw(hline[i]);
+		for (int i = 0; i < width + hindex - hstart + 1; i++)
+			window.draw(vline[i]);
+
+		/* Horizontal description. */
+		for (int i = 0; i < height; i++)
+			for (int j = hstart; j < hindex; j++)
+				if (horizontal[i][j])
+					window.draw(hortext[i][j]);
+
+
+		/* Vertical description. */
+		for (int i = vstart; i < vindex; i++)
+			for (int j = 0; j < width; j++)
+				if (vertical[i][j])
+					window.draw(vertext[i][j]);
+	}
 };
 
 
 int main()
 {
-	int xpos;						/* Index of the cell being pressed. */
-	int ypos;						/* Index of the cell being pressed. */
-	int button;						/* Remembers new state of the cell. */
-	char answer = 's';				/* Solve or Play? */
-	bool solved = false;			/* If solved (true) it cannot be changed. */
-	bool checkifsolved = false;		/* Checks solving algo. */
-	bool mousepressed = false;		/* If true, then mouse motion should change cells' state. */
-	int count = 0;
-
 	/* Constructing the field. */
-	Nonogram Field(16);
+	BWNonogram Field(16);
 
 	/* Create a window. */
-	RenderWindow window(VideoMode((Field.width + Field.hindex - Field.hstart) * Field.cellsize + 1, (Field.height + Field.vindex - Field.vstart) * Field.cellsize + 1), "Field", Style::Close);
+	RenderWindow window(VideoMode(Field.wx, Field.wy), "Field", Style::Close);
 
-	/*
-	* Main cycle.
-	* Works until the window is closed.
-	*/
 	while (window.isOpen())
 	{
 		Event event;
-		while (window.pollEvent(event))
-		{
-			switch (event.type)
-			{
-			case Event::Closed:
+		while (window.pollEvent(event))		
+			if (event.type == Event::Closed)
 				window.close();
-				break;
-
-			case Event::MouseButtonPressed:
-				if (answer == 'p' && solved == false)
-				{
-					xpos = (event.mouseButton.x - (Field.hindex - Field.hstart) * Field.cellsize) / Field.cellsize;
-					ypos = (event.mouseButton.y - (Field.vindex - Field.vstart) * Field.cellsize) / Field.cellsize;
-
-					/* Breaks if the click is not within the field. */
-					if (xpos < 0 || ypos < 0)
-						break;
-
-					/* If mouse button has been pressed, then no cells have been changed yet. */
-					for (int i = 0; i < Field.height; i++)
-						for (int j = 0; j < Field.width; j++)
-							Field.cellarr[i][j].changed = false;
-									
-					/* Remember new state to change every cell under dragging cursor to this state. */
-					button = Field.cellarr[ypos][xpos].ChangeStateClick(event.mouseButton.button);
-
-					Field.UpdateDescription(xpos, ypos);
-
-					if (Field.CheckUser())
-					{
-						std::system("cls");
-						std::cout << "CORRECT!\nCONGRATULATIONS!";
-						solved = true;
-					}
-
-					mousepressed = true;
-				}
-				break;
-
-			case Event::MouseMoved:
-				/* Works only when the mouse button is pressed.*/
-				if (mousepressed)
-				{
-					xpos = (event.mouseMove.x - (Field.hindex - Field.hstart) * Field.cellsize) / Field.cellsize;
-					ypos = (event.mouseMove.y - (Field.vindex - Field.vstart) * Field.cellsize) / Field.cellsize;
-					
-					/* Breaks if the click is not within the field. */
-					if (xpos < 0 || ypos < 0 || xpos >= Field.width || ypos >= Field.height)
-						break;
-
-					/* If thе cell hasn't been changed it is changed to remembered state. */
-					if (Field.cellarr[ypos][xpos].changed == false)
-						Field.cellarr[ypos][xpos].ChangeStateSolve(button);
-
-					Field.UpdateDescription(xpos, ypos);
-
-					if (Field.CheckUser())
-					{
-						std::system("cls");
-						std::cout << "CORRECT!\nCONGRATULATIONS!";
-						solved = true;
-					}
-				}
-
-				break;
-
-			case Event::MouseButtonReleased:
-				/* If mouse button is not pressed anymore, mouse movement shouldn't cause cell change. */
-				mousepressed = false;
-				break;
-
-			case Event::KeyPressed:
-				/* Stop the solving. */
-				if (event.key.code == Keyboard::Space && answer == 's')
-					solved = true;
-
-				if (event.key.code == Keyboard::H)
-					Field.ShowDescription();
-
-				if (event.key.code == Keyboard::S)
-					Field.SaveDescription();
-
-				break;
-
-			default:
-				break;
-			}
-
-		} /* Event cycle end. */
+			else
+				Field.EventReaction(event);		
 
 		window.clear(Color(173, 173, 173));
-
-		/* Draw the field, the grid and description. */
-		{
-			/* Field. */
-			for (int i = 0; i < Field.height; i++)
-				for (int j = 0; j < Field.width; j++)
-					window.draw(Field.cellarr[i][j].cellsprite);
-
-			/* Grid. */
-			for (int i = 0; i < Field.height + Field.vindex - Field.vstart + 1; i++)
-				window.draw(Field.hline[i]);
-			for (int i = 0; i < Field.width + Field.hindex - Field.hstart + 1; i++)
-				window.draw(Field.vline[i]);
-
-			/* Horizontal description. */
-			for (int i = 0; i < Field.height; i++)
-				for (int j = Field.hstart; j < Field.hindex; j++)				
-					if (Field.horizontal[i][j])
-						window.draw(Field.hortext[i][j]);
-				
-
-			/* Vertical description. */
-			for (int i = Field.vstart; i < Field.vindex; i++)
-				for (int j = 0; j < Field.width; j++)				
-					if (Field.vertical[i][j])
-						window.draw(Field.vertext[i][j]);
-				
-		}
+	
+		Field.Draw(window);						
 
 		window.display();
-
-		/* Solve. */
-		if (answer == 's' && solved == false)
-		{
-			Field.CheckHor();
-			for (int j = 0; j < Field.height; j++)
-				Field.hchange[j] = false;
-			Field.CheckVert();
-			for (int j = 0; j < Field.width; j++)
-				Field.vchange[j] = false;
-
-			checkifsolved = true;
-			/* Detects solved nonogram by finding 0 PWHITE cells. */
-			for (int i = 0; i < Field.height; i++)
-			{
-				for (int j = 0; j < Field.width; j++)
-					if (Field.cellarr[i][j].state == PWHITE)
-					{
-						checkifsolved = false;
-						break;
-					}
-				if (!checkifsolved)
-					break;
-			}
-
-			if (checkifsolved)
-			{
-				std::system("cls");
-				std::cout << "CORRECT!\nCONGRATULATIONS!";
-				solved = true;
-			}
-		}
+		
+		Field.Solve();	
 		
 	}
 
