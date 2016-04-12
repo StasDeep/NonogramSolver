@@ -1,6 +1,6 @@
 /*
- * Field.
- */
+* Field.
+*/
 
 #include "stdafx.h"
 #include <iostream>
@@ -10,6 +10,9 @@
 #include <SFML\Graphics.hpp>
 #include <SFML\System.hpp> 
 #include <SFML\Window.hpp>
+
+#define MENUWIDTH 1200
+#define MENUHEIGHT 600
 
 /* Initialize dynamic 2D array of integer numbers. */
 int **CreateArr(int m, int n)
@@ -61,13 +64,13 @@ public:
 		{
 			if (state == 0 || state == 2)
 			{
-				cellsprite.setTextureRect(IntRect(32, 0, 32, 32));
+				cellsprite.setTextureRect(IntRect(128, 0, 128, 128));
 				state = DBLACK;
 				return 1;
 			}
 			else
 			{
-				cellsprite.setTextureRect(IntRect(0, 0, 32, 32));
+				cellsprite.setTextureRect(IntRect(0, 0, 128, 128));
 				state = PWHITE;
 				return 0;
 			}
@@ -78,13 +81,13 @@ public:
 		{
 			if (state == 0 || state == 1)
 			{
-				cellsprite.setTextureRect(IntRect(64, 0, 32, 32));
+				cellsprite.setTextureRect(IntRect(256, 0, 128, 128));
 				state = DWHITE;
 				return 2;
 			}
 			else
 			{
-				cellsprite.setTextureRect(IntRect(0, 0, 32, 32));
+				cellsprite.setTextureRect(IntRect(0, 0, 128, 128));
 				state = PWHITE;
 				return 0;
 			}
@@ -93,7 +96,7 @@ public:
 
 		case 2:
 		{
-			cellsprite.setTextureRect(IntRect(0, 0, 32, 32));
+			cellsprite.setTextureRect(IntRect(0, 0, 128, 128));
 			state = PWHITE;
 			return 0;
 			break;
@@ -112,17 +115,17 @@ public:
 		switch (newstate)
 		{
 		case 0:
-			cellsprite.setTextureRect(IntRect(0, 0, 32, 32));
+			cellsprite.setTextureRect(IntRect(0, 0, 128, 128));
 			state = PWHITE;
 			break;
 
 		case 1:
-			cellsprite.setTextureRect(IntRect(32, 0, 32, 32));
+			cellsprite.setTextureRect(IntRect(128, 0, 128, 128));
 			state = DBLACK;
 			break;
 
 		case 2:
-			cellsprite.setTextureRect(IntRect(64, 0, 32, 32));
+			cellsprite.setTextureRect(IntRect(256, 0, 128, 128));
 			state = DWHITE;
 			break;
 
@@ -136,7 +139,7 @@ public:
 class BWNonogram
 {
 public:
-	char name[30] = "Nonograms/Nonogram56x26.txt";
+	char name[30] = "Nonograms/Nonogram18x18.txt";
 	char answer;			/* Solve or Play? */
 	bool solved;			/* If solved (true) nonogram cannot be changed. */
 	bool mousepressed;		/* If true, then mouse motion should change cells' state. */
@@ -166,11 +169,9 @@ public:
 	Font font;				/* Font of the description numbers. */
 
 	/* Constructor. */
-	BWNonogram(int size)
+	BWNonogram()
 	{
-		cellsize = size;
 		button = 0;
-		answer = 's';
 		solved = false;
 		mousepressed = false;
 
@@ -297,28 +298,28 @@ public:
 			vchange[i] = true;
 
 		/* Set cells' texture. */
-		celltex.loadFromFile("Images/cells.png");
+		celltex.loadFromFile("Images/cells128.png");
 		celltex.setSmooth(true);
 
 		/* Set position and state of cells. */
-		for (int i = 0; i < height; i++)		
+		for (int i = 0; i < height; i++)
 			for (int j = 0; j < width; j++)
 			{
 				cellarr[i][j].cellsprite.setPosition((j + hindex - hstart) * cellsize, (i + vindex - vstart) * cellsize);
 				cellarr[i][j].cellsprite.setTexture(celltex);
-				cellarr[i][j].cellsprite.scale((float)cellsize / 32, (float)cellsize / 32);
+				cellarr[i][j].cellsprite.scale((float)cellsize / 128, (float)cellsize / 128);
 				cellarr[i][j].ChangeStateClick(2);
 				cellarr[i][j].black = false;
 				cellarr[i][j].white = false;
 			}
-		
+
 
 	}
 
 	/* Read blocks description from a file. */
 	void ReadDescription()
 	{
-		#pragma warning (disable: 4996)					
+#pragma warning (disable: 4996)					
 		std::ifstream Descr(name);
 		Descr >> width;
 		Descr >> height;
@@ -329,6 +330,9 @@ public:
 		vindex = (height + 1) / 2;
 		hstart = hindex - hstart;
 		vstart = vindex - vstart;
+
+		cellsize = 600 / (height + vindex - vstart);
+
 		horizontal = CreateArr(height, hindex);
 		vertical = CreateArr(vindex, width);
 		hcurrdescr = CreateArr(height, hindex);
@@ -361,7 +365,7 @@ public:
 		int blcount = 0;	/* Amount of blocks in a line/column. */
 		int blsize = 0;		/* Amount of black cells in a block. */
 
-		/* Walk through horizontal blocks. */
+							/* Walk through horizontal blocks. */
 		for (int j = width - 1; j >= 0; j--)
 		{
 			if (cellarr[ypos][j].state == DBLACK)
@@ -488,7 +492,7 @@ public:
 		}
 
 		/* Write current description to the new file. */
-		std::ofstream Descr;		
+		std::ofstream Descr;
 		Descr.open("Nonograms/NewNonogram.txt");
 		Descr << width << " " << height << " ";
 		Descr << vindex - verstart << " " << hindex - horstart << "\n";
@@ -509,7 +513,7 @@ public:
 			Descr << "\n";
 		}
 		Descr.close();
-		
+
 	}
 
 	/* Check if the user's solving is correct. */
@@ -532,7 +536,7 @@ public:
 
 	/* Call main algorithm and check if the solving is correct. */
 	bool Solve()
-	{				
+	{
 		if (answer != 's' || solved == true)
 			return false;
 
@@ -566,7 +570,7 @@ public:
 		}
 
 		return checkifsolved;
-		
+
 	}
 
 	/* Check all horizontal lines. */
@@ -576,7 +580,7 @@ public:
 		int nonzero;		/* Number of the block, counting starts from.*/
 		int maxcell;		/* Length of the longest block in the line. */
 		bool emptyline;		/* True if the line is empty. */
-		
+
 		for (int j = 0; j < height; j++)
 		{
 			/* Immediately goes to the next line if the current one hasn't changed since last check. */
@@ -637,7 +641,7 @@ public:
 						nonzero = i;
 					sum++;
 				}
-			}			
+			}
 
 			/* If the line is empty, go to the next one. */
 			if (sum == 0)
@@ -726,7 +730,7 @@ public:
 				cellarr[i][j].white = false;
 				cellarr[i][j].black = false;
 			}
-						
+
 			sum = 0;
 			nonzero = -1;
 			/* Count the maximum value in the description line. */
@@ -983,7 +987,7 @@ public:
 			break;
 
 		case Event::KeyPressed:
-			/* Stop the solving. */
+			/* Stop solving. */
 			if (event.key.code == Keyboard::Space && answer == 's')
 				solved = true;
 
@@ -1003,6 +1007,8 @@ public:
 	/* Draw field, grid and description. */
 	void Draw(RenderWindow &window)
 	{
+		window.clear(Color(173, 173, 173));
+
 		/* Field. */
 		for (int i = 0; i < height; i++)
 			for (int j = 0; j < width; j++)
@@ -1029,11 +1035,150 @@ public:
 	}
 };
 
+class MainMenu
+{
+public:
+	Sprite play;
+	Sprite solve;
+	Sprite exit;
+	bool p;
+	bool s;
+	bool e;
+	Texture menutex;
+
+	MainMenu(int width, int height)
+	{
+		menutex.loadFromFile("Images/menu.png");
+		menutex.setSmooth(true);
+		p = s = e = false;
+
+		play.setTexture(menutex);
+		play.setTextureRect(IntRect(0, 0, 270, 100));
+		play.setOrigin(135, 50);
+		play.setPosition(width / 2, height / 2 - 100);
+
+		solve.setTexture(menutex);
+		solve.setTextureRect(IntRect(270, 0, 270, 100));
+		solve.setOrigin(135, 50);
+		solve.setPosition(width / 2, height / 2);
+
+		exit.setTexture(menutex);
+		exit.setTextureRect(IntRect(540, 0, 270, 100));
+		exit.setOrigin(135, 50);
+		exit.setPosition(width / 2, height / 2 + 100);
+	}
+
+	void DrawMain(RenderWindow &window)
+	{
+		window.clear(Color(39, 39, 39));
+
+		window.draw(play);
+		window.draw(solve);
+		window.draw(exit);
+	}
+
+	char EventReaction(Event event, int width, int height)
+	{
+		if (event.type == Event::MouseMoved)
+		{
+			int xpos = event.mouseMove.x;
+			int ypos = event.mouseMove.y;
+			if (xpos > width / 2 - 135 && xpos < width / 2 + 135)
+			{
+				if (ypos > height / 2 - 150 && ypos < height / 2 - 50)
+					play.setTextureRect(IntRect(0 + 810, 0, 270, 100));
+				else
+					play.setTextureRect(IntRect(0, 0, 270, 100));
+				if (ypos > height / 2 - 50 && ypos < height / 2 + 50)
+					solve.setTextureRect(IntRect(270 + 810, 0, 270, 100));
+				else
+					solve.setTextureRect(IntRect(270, 0, 270, 100));
+
+				if (ypos > height / 2 + 50 && ypos < height / 2 + 150)
+					exit.setTextureRect(IntRect(540 + 810, 0, 270, 100));
+				else
+					exit.setTextureRect(IntRect(540, 0, 270, 100));
+			}
+			else
+			{
+				play.setTextureRect(IntRect(0, 0, 270, 100));
+				solve.setTextureRect(IntRect(270, 0, 270, 100));
+				exit.setTextureRect(IntRect(540, 0, 270, 100));
+			}
+		}
+		if (event.type == Event::MouseButtonReleased)
+		{
+			int xpos = event.mouseButton.x;
+			int ypos = event.mouseButton.y;
+
+			if (xpos > width / 2 - 135 && xpos < width / 2 + 135)
+			{
+				if (ypos > height / 2 - 150 && ypos < height / 2 - 50)
+					return 'p';
+				if (ypos > height / 2 - 50 && ypos < height / 2 + 50)
+					return 's';
+				if (ypos > height / 2 + 50 && ypos < height / 2 + 150)
+					return 'e';
+			}
+		}
+		return '0';
+	}
+};
+
 
 int main()
 {
+	bool menu = true;
+
 	/* Constructing the field. */
-	BWNonogram Field(16);
+	BWNonogram Field;
+
+	/* Constructing the menu. */
+	MainMenu Menu(MENUWIDTH, MENUHEIGHT);
+
+	RenderWindow menuwindow(VideoMode(MENUWIDTH, MENUHEIGHT), "Menu", Style::Close);
+
+	while (menuwindow.isOpen() && menu == true)
+	{
+		Event event;
+		while (menuwindow.pollEvent(event))
+		{
+			/* Exit from the solving. */
+			/*if (menu == false &&
+			event.type == Event::MouseButtonReleased &&
+			event.mouseButton.x < (Field.hindex - Field.hstart) * Field.cellsize &&
+			event.mouseButton.y < (Field.vindex - Field.vstart) * Field.cellsize)
+			{
+			menu = true;
+			Field.mousepressed = false;
+			}*/
+
+			if (event.type == Event::Closed)
+			{
+				menuwindow.close();
+				return 0;
+			}
+			else
+				Field.answer = (Menu.EventReaction(event, MENUWIDTH, MENUHEIGHT));
+
+			if (Field.answer == 'p' || Field.answer == 's')
+			{
+				menuwindow.close();
+				menu = false;
+			}
+
+			if (Field.answer == 'e')
+			{
+				menuwindow.close();
+				return 0;
+			}
+		}
+
+		Menu.DrawMain(menuwindow);
+
+		menuwindow.display();
+
+	}
 
 	/* Create a window. */
 	RenderWindow window(VideoMode(Field.wx, Field.wy), "Field", Style::Close);
@@ -1041,20 +1186,31 @@ int main()
 	while (window.isOpen())
 	{
 		Event event;
-		while (window.pollEvent(event))		
+		while (window.pollEvent(event))
+		{
+			/* Exit from the solving. */
+			/*if (menu == false &&
+				event.type == Event::MouseButtonReleased &&
+				event.mouseButton.x < (Field.hindex - Field.hstart) * Field.cellsize &&
+				event.mouseButton.y < (Field.vindex - Field.vstart) * Field.cellsize)
+			{
+				menu = true;
+				Field.mousepressed = false;
+			}*/
+
 			if (event.type == Event::Closed)
 				window.close();
 			else
-				Field.EventReaction(event);		
+				Field.EventReaction(event);
+		}
 
-		window.clear(Color(173, 173, 173));
-	
-		Field.Draw(window);						
+		
+		Field.Draw(window);
 
 		window.display();
-		
-		Field.Solve();	
-		
+
+		Field.Solve();
+
 	}
 
 	return 0;
