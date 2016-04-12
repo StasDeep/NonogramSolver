@@ -11,7 +11,7 @@
 #include <SFML\System.hpp> 
 #include <SFML\Window.hpp>
 
-#define MENUWIDTH 1200
+#define MENUWIDTH 1280
 #define MENUHEIGHT 600
 
 /* Initialize dynamic 2D array of integer numbers. */
@@ -139,7 +139,7 @@ public:
 class BWNonogram
 {
 public:
-	char name[30] = "Nonograms/Nonogram18x18.txt";
+	char name[44];
 	char answer;			/* Solve or Play? */
 	bool solved;			/* If solved (true) nonogram cannot be changed. */
 	bool mousepressed;		/* If true, then mouse motion should change cells' state. */
@@ -169,8 +169,33 @@ public:
 	Font font;				/* Font of the description numbers. */
 
 	/* Constructor. */
-	BWNonogram()
+	BWNonogram(char ans, int nonogname)
 	{
+		switch (nonogname)
+		{
+		case 0:
+			strcpy_s(name, 45, "Nonograms/10x10littlehouse.txt");
+			break;
+		case 1:
+			strcpy_s(name, 45, "Nonograms/11x13skull.txt");
+			break;
+		case 2:
+			strcpy_s(name, 45, "Nonograms/14x17candies.txt");
+			break;
+		case 3:
+			strcpy_s(name, 45, "Nonograms/15x15elephant.txt");
+			break;
+		case 4:
+			strcpy_s(name, 45, "Nonograms/18x18eye.txt");
+			break;
+		case 5:
+			strcpy_s(name, 45, "Nonograms/30x42dancer.txt");
+			break;
+		case 6:
+			strcpy_s(name, 45, "Nonograms/56x26turtle.txt");
+			break;
+		}
+		answer = ans;
 		button = 0;
 		solved = false;
 		mousepressed = false;
@@ -1041,34 +1066,105 @@ public:
 	Sprite play;
 	Sprite solve;
 	Sprite exit;
+	Sprite tops;
+	Sprite color[2];
+	Sprite diff[3];
+	Sprite arrow[2];
+	Sprite start;
+	Sprite names;
+	int name = 0;
+	bool bcolor[2];
+	bool bdiff[3];
 	bool p;
 	bool s;
 	bool e;
 	Texture menutex;
+	Texture top;
+	Texture colorbw;
+	Texture diffic;
+	Texture arrows;
+	Texture tstart;
+	Texture tnames;
 
 	MainMenu(int width, int height)
 	{
-		menutex.loadFromFile("Images/menu.png");
-		menutex.setSmooth(true);
-		p = s = e = false;
+		/* Load textures. */
+		{
+			menutex.loadFromFile("Images/menu.png");
+			colorbw.loadFromFile("Images/settings.png");
+			diffic.loadFromFile("Images/settings2.png");
+			arrows.loadFromFile("Images/arrowbuttons.png");
+			tstart.loadFromFile("Images/startbutton.png");
+			tnames.loadFromFile("Images/names.png");
+			top.loadFromFile("Images/pmenutop.png");
+		}
+		
+		/* Set title menu sprites.*/
+		{
+			p = s = e = false;
 
-		play.setTexture(menutex);
-		play.setTextureRect(IntRect(0, 0, 270, 100));
-		play.setOrigin(135, 50);
-		play.setPosition(width / 2, height / 2 - 100);
+			play.setTexture(menutex);
+			play.setTextureRect(IntRect(0, 0, 270, 100));
+			play.setOrigin(135, 50);
+			play.setPosition(width / 2, height / 2 - 100);
 
-		solve.setTexture(menutex);
-		solve.setTextureRect(IntRect(270, 0, 270, 100));
-		solve.setOrigin(135, 50);
-		solve.setPosition(width / 2, height / 2);
+			solve.setTexture(menutex);
+			solve.setTextureRect(IntRect(270, 0, 270, 100));
+			solve.setOrigin(135, 50);
+			solve.setPosition(width / 2, height / 2);
 
-		exit.setTexture(menutex);
-		exit.setTextureRect(IntRect(540, 0, 270, 100));
-		exit.setOrigin(135, 50);
-		exit.setPosition(width / 2, height / 2 + 100);
+			exit.setTexture(menutex);
+			exit.setTextureRect(IntRect(540, 0, 270, 100));
+			exit.setOrigin(135, 50);
+			exit.setPosition(width / 2, height / 2 + 100);
+		}
+
+		/* Set play menu sprites. */
+		{
+			tops.setTexture(top);
+			tops.setTextureRect(IntRect(0, 0, 1280, 130));
+			tops.setPosition(0, 0);
+
+			color[0].setTexture(colorbw);
+			color[0].setTextureRect(IntRect(0, 0, 240, 50));
+			color[0].setPosition(420, 160);
+			bcolor[0] = false;
+			color[1].setTexture(colorbw);
+			color[1].setTextureRect(IntRect(720, 0, 150, 50));
+			color[1].setPosition(687, 160);
+			bcolor[1] = false;
+
+			diff[0].setTexture(diffic);
+			diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+			diff[0].setPosition(420, 260);
+			bdiff[0] = false;
+			diff[1].setTexture(diffic);
+			diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+			diff[1].setPosition(560, 260);
+			bdiff[1] = false;
+			diff[2].setTexture(diffic);
+			diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+			diff[2].setPosition(730, 260);
+			bdiff[2] = false;
+
+			arrow[0].setTexture(arrows);
+			arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+			arrow[0].setPosition(440, 360);
+			arrow[1].setTexture(arrows);
+			arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+			arrow[1].setPosition(800, 360);
+
+			start.setTexture(tstart);
+			start.setTextureRect(IntRect(0, 0, 290, 44));
+			start.setPosition(495, 470);
+
+			names.setTexture(tnames);
+			names.setTextureRect(IntRect(0, 0, 290, 44));
+			names.setPosition(495, 364);
+		}
 	}
 
-	void DrawMain(RenderWindow &window)
+	void DrawTitle(RenderWindow &window)
 	{
 		window.clear(Color(39, 39, 39));
 
@@ -1077,7 +1173,23 @@ public:
 		window.draw(exit);
 	}
 
-	char EventReaction(Event event, int width, int height)
+	void DrawPlay(RenderWindow &window)
+	{
+		window.clear(Color(39, 39, 39));
+
+		window.draw(tops);
+		window.draw(color[0]);
+		window.draw(color[1]);
+		window.draw(diff[0]);
+		window.draw(diff[1]);
+		window.draw(diff[2]);
+		window.draw(arrow[0]);
+		window.draw(arrow[1]);
+		window.draw(start);
+		window.draw(names);
+	}
+
+	char TitleEventReaction(Event event, int width, int height)
 	{
 		if (event.type == Event::MouseMoved)
 		{
@@ -1123,22 +1235,162 @@ public:
 		}
 		return '0';
 	}
+
+	int PlayEventReaction(Event event)
+	{
+		if (event.type == Event::MouseMoved)
+		{
+			int xpos = event.mouseMove.x;
+			int ypos = event.mouseMove.y;
+			
+			/* Check mouse movement. */
+			{
+				if (xpos < 265 && xpos > 55 && ypos > 50 && ypos < 120)
+					tops.setTextureRect(IntRect(0, 130, 1280, 130));
+				else
+					tops.setTextureRect(IntRect(0, 0, 1280, 130));
+
+				if (bcolor[0] == false)
+					if (xpos > 420 && xpos < 660 && ypos > 160 && ypos < 210)
+						color[0].setTextureRect(IntRect(240, 0, 240, 50));
+					else
+						color[0].setTextureRect(IntRect(0, 0, 240, 50));
+
+				if (bcolor[1] == false)
+					if (xpos > 687 && xpos < 837 && ypos > 160 && ypos < 210 )
+						color[1].setTextureRect(IntRect(870, 0, 150, 50));
+					else
+						color[1].setTextureRect(IntRect(720, 0, 150, 50));
+				
+				if (bdiff[0] == false)
+					if (xpos > 420 && xpos < 530 && ypos > 260 && ypos < 310)
+						diff[0].setTextureRect(IntRect(110, 0, 110, 50));
+					else
+						diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+
+				if (bdiff[1] == false)
+					if (xpos > 560 && xpos < 710 && ypos > 260 && ypos < 310)
+						diff[1].setTextureRect(IntRect(480, 0, 150, 50));
+					else
+						diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+
+				if (bdiff[2] == false)
+					if (xpos > 730 && xpos < 840 && ypos > 260 && ypos < 310)
+						diff[2].setTextureRect(IntRect(890, 0, 110, 50));
+					else
+						diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+
+				if (xpos > 440 && xpos < 480 && ypos > 360 && ypos < 410 && name > 0)
+					arrow[0].setTextureRect(IntRect(40, 0, 40, 50));
+				else
+					arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+
+				if (xpos > 800 && xpos < 840 && ypos > 360 && ypos < 410 && name < 6)
+					arrow[1].setTextureRect(IntRect(120, 0, 40, 50));
+				else
+					arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+
+				if (xpos > 495 && xpos < 785 && ypos > 470 && ypos < 514)
+					start.setTextureRect(IntRect(290, 0, 290, 44));
+				else
+					start.setTextureRect(IntRect(0, 0, 290, 44));
+			}
+
+		}
+		if (event.type == Event::MouseButtonReleased)
+		{
+			int xpos = event.mouseButton.x;
+			int ypos = event.mouseButton.y;
+
+			/* Check mouse click. */
+			{
+				if (xpos < 265 && xpos > 55 && ypos > 50 && ypos < 120)
+				{
+					tops.setTextureRect(IntRect(0, 0, 1280, 130));
+					return 0;
+				}
+
+				if (xpos > 420 && xpos < 660 && ypos > 160 && ypos < 210)
+				{
+					bcolor[0] = true;
+					bcolor[1] = false;
+					color[0].setTextureRect(IntRect(480, 0, 240, 50));
+					color[1].setTextureRect(IntRect(720, 0, 150, 50));
+				}
+
+				if (xpos > 687 && xpos < 837 && ypos > 160 && ypos < 210)
+				{
+					bcolor[1] = true;
+					bcolor[0] = false;
+					color[1].setTextureRect(IntRect(1020, 0, 150, 50));
+					color[0].setTextureRect(IntRect(0, 0, 240, 50));
+				}
+
+				if (xpos > 420 && xpos < 530 && ypos > 260 && ypos < 310)
+				{
+					bdiff[0] = true;
+					bdiff[1] = false;
+					bdiff[2] = false;
+					diff[0].setTextureRect(IntRect(220, 0, 110, 50));
+					diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+					diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+				}
+
+				if (xpos > 560 && xpos < 710 && ypos > 260 && ypos < 310)
+				{
+					bdiff[0] = false;
+					bdiff[1] = true;
+					bdiff[2] = false;
+					diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+					diff[1].setTextureRect(IntRect(630, 0, 150, 50));
+					diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+				}
+
+
+				if (xpos > 730 && xpos < 840 && ypos > 260 && ypos < 310)
+				{
+					bdiff[0] = false;
+					bdiff[1] = false;
+					bdiff[2] = true;
+					diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+					diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+					diff[2].setTextureRect(IntRect(1000, 0, 110, 50));
+				}
+
+				if (xpos > 440 && xpos < 480 && ypos > 360 && ypos < 410 && name > 0)
+				{
+					names.setTextureRect(IntRect(--name * 290, 0, 290, 44));
+					if (name == 0)
+						arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+				}
+
+				if (xpos > 800 && xpos < 840 && ypos > 360 && ypos < 410 && name < 6)
+				{
+					names.setTextureRect(IntRect(++name * 290, 0, 290, 44));
+					if (name == 6)
+						arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+				}
+
+				if (xpos > 495 && xpos < 785 && ypos > 470 && ypos < 514)
+					return 1;
+			}
+		}
+	}
 };
 
 
 int main()
 {
-	bool menu = true;
-
-	/* Constructing the field. */
-	BWNonogram Field;
-
+	bool title = true;
+	bool play = false;
+	char ans;
+	
 	/* Constructing the menu. */
 	MainMenu Menu(MENUWIDTH, MENUHEIGHT);
 
 	RenderWindow menuwindow(VideoMode(MENUWIDTH, MENUHEIGHT), "Menu", Style::Close);
 
-	while (menuwindow.isOpen() && menu == true)
+	while (menuwindow.isOpen())
 	{
 		Event event;
 		while (menuwindow.pollEvent(event))
@@ -1157,29 +1409,61 @@ int main()
 			{
 				menuwindow.close();
 				return 0;
-			}
-			else
-				Field.answer = (Menu.EventReaction(event, MENUWIDTH, MENUHEIGHT));
-
-			if (Field.answer == 'p' || Field.answer == 's')
+			}			
+			
+			if (title)
 			{
-				menuwindow.close();
-				menu = false;
+				ans = Menu.TitleEventReaction(event, MENUWIDTH, MENUHEIGHT);
+
+				switch (ans)
+				{
+				case 'e':
+					menuwindow.close();
+					return 0;
+					break;
+				case 'p':
+					title = false;
+					play = true;
+					continue;
+				case 's':
+					title = false;
+					play = true;
+					continue;
+				}
 			}
 
-			if (Field.answer == 'e')
+			if (play)
 			{
-				menuwindow.close();
-				return 0;
+				switch (Menu.PlayEventReaction(event))
+				{
+				case 0:
+					play = false;
+					title = true;
+					break;
+				case 1:
+					menuwindow.close();
+					break;
+				}
 			}
+
+			
 		}
 
-		Menu.DrawMain(menuwindow);
+		if (title)
+			Menu.DrawTitle(menuwindow);
+
+		if (play)
+			Menu.DrawPlay(menuwindow);
 
 		menuwindow.display();
 
 	}
 
+	
+
+	/* Constructing the field. */
+	BWNonogram Field(ans, Menu.name);
+	
 	/* Create a window. */
 	RenderWindow window(VideoMode(Field.wx, Field.wy), "Field", Style::Close);
 
