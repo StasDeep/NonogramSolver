@@ -1063,57 +1063,83 @@ public:
 class MainMenu
 {
 public:
-	Sprite play;
-	Sprite solve;
-	Sprite exit;
-	Sprite tops;
-	Sprite color[2];
-	Sprite diff[3];
-	Sprite arrow[2];
-	Sprite start;
-	Sprite names;
 	int name = 0;
 	bool bcolor[2];
 	bool bdiff[3];
-	bool p;
-	bool s;
-	bool e;
-	Texture menutex;
-	Texture top;
-	Texture colorbw;
-	Texture diffic;
-	Texture arrows;
-	Texture tstart;
-	Texture tnames;
+
+	int width = 5;
+	int height = 5;
+	bool hint;
+	bool activeleft;
+	bool activeright;
+	RectangleShape cap;
+
+	Sprite play;
+	Sprite solve;
+	Sprite exit;
+	Texture titlemenutex;
+
+	Sprite play_bg;
+	Sprite color[2];
+	Sprite diff[3];
+	Sprite lr_arrow[2];	
+	Sprite start;
+	Sprite names;	
+	Texture play_bgtex;
+	Texture colortex;
+	Texture difftex;
+	Texture lr_arrowtex;
+	Texture starttex;
+	Texture namestex;	
+
+	Sprite solve_bg;
+	Sprite back;
+	Sprite OK;
+	Sprite ud_arrow[4];
+	Sprite ctrl;
+	Texture solve_bgtex;
+	Texture backtex;
+	Texture OKtex;
+	Texture ud_arrowtex;
+	Texture ctrltex;
+	Font proxima;
+	Text size[2];
 
 	MainMenu(int width, int height)
 	{
 		/* Load textures. */
 		{
-			menutex.loadFromFile("Images/menu.png");
-			colorbw.loadFromFile("Images/settings.png");
-			diffic.loadFromFile("Images/settings2.png");
-			arrows.loadFromFile("Images/arrowbuttons.png");
-			tstart.loadFromFile("Images/startbutton.png");
-			tnames.loadFromFile("Images/names.png");
-			top.loadFromFile("Images/pmenutop.png");
+			titlemenutex.loadFromFile("Images/menu.png");
+
+			play_bgtex.loadFromFile("Images/pmenutop.png");
+			colortex.loadFromFile("Images/settings.png");
+			difftex.loadFromFile("Images/settings2.png");
+			lr_arrowtex.loadFromFile("Images/arrowbuttons.png");
+			starttex.loadFromFile("Images/startbutton.png");
+			namestex.loadFromFile("Images/names.png");
+			
+			solve_bgtex.loadFromFile("Images/smenutop.png");
+			backtex.loadFromFile("Images/backtomenu.png");
+			OKtex.loadFromFile("Images/okbutton.png");
+			ud_arrowtex.loadFromFile("Images/updownarrowbuttons.png");
+			ctrltex.loadFromFile("Images/Ctrl.png");
+			proxima.loadFromFile("Proxima Nova Bold.otf");
 		}
 		
 		/* Set title menu sprites.*/
 		{
-			p = s = e = false;
 
-			play.setTexture(menutex);
+			play.setTexture(titlemenutex);
 			play.setTextureRect(IntRect(0, 0, 270, 100));
 			play.setOrigin(135, 50);
 			play.setPosition(width / 2, height / 2 - 100);
 
-			solve.setTexture(menutex);
+			solve.setTexture(titlemenutex);
 			solve.setTextureRect(IntRect(270, 0, 270, 100));
 			solve.setOrigin(135, 50);
 			solve.setPosition(width / 2, height / 2);
 
-			exit.setTexture(menutex);
+			exit.setTexture(titlemenutex);
 			exit.setTextureRect(IntRect(540, 0, 270, 100));
 			exit.setOrigin(135, 50);
 			exit.setPosition(width / 2, height / 2 + 100);
@@ -1121,46 +1147,86 @@ public:
 
 		/* Set play menu sprites. */
 		{
-			tops.setTexture(top);
-			tops.setTextureRect(IntRect(0, 0, 1280, 130));
-			tops.setPosition(0, 0);
+			play_bg.setTexture(play_bgtex);
+			play_bg.setTextureRect(IntRect(0, 0, 1280, 130));
+			play_bg.setPosition(0, 0);
 
-			color[0].setTexture(colorbw);
-			color[0].setTextureRect(IntRect(0, 0, 240, 50));
-			color[0].setPosition(420, 160);
-			bcolor[0] = false;
-			color[1].setTexture(colorbw);
-			color[1].setTextureRect(IntRect(720, 0, 150, 50));
-			color[1].setPosition(687, 160);
-			bcolor[1] = false;
+			color[0].setTexture(colortex);			
+			color[1].setTexture(colortex);			
 
-			diff[0].setTexture(diffic);
-			diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+			diff[0].setTexture(difftex);
+			diff[0].setTextureRect(IntRect(220, 0, 110, 50));
 			diff[0].setPosition(420, 260);
-			bdiff[0] = false;
-			diff[1].setTexture(diffic);
+			bdiff[0] = true;
+			diff[1].setTexture(difftex);
 			diff[1].setTextureRect(IntRect(330, 0, 150, 50));
 			diff[1].setPosition(560, 260);
 			bdiff[1] = false;
-			diff[2].setTexture(diffic);
+			diff[2].setTexture(difftex);
 			diff[2].setTextureRect(IntRect(780, 0, 110, 50));
 			diff[2].setPosition(730, 260);
 			bdiff[2] = false;
 
-			arrow[0].setTexture(arrows);
-			arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
-			arrow[0].setPosition(440, 360);
-			arrow[1].setTexture(arrows);
-			arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
-			arrow[1].setPosition(800, 360);
+			lr_arrow[0].setTexture(lr_arrowtex);
+			lr_arrow[1].setTexture(lr_arrowtex);			
 
-			start.setTexture(tstart);
+			start.setTexture(starttex);
 			start.setTextureRect(IntRect(0, 0, 290, 44));
 			start.setPosition(495, 470);
 
-			names.setTexture(tnames);
-			names.setTextureRect(IntRect(0, 0, 290, 44));
-			names.setPosition(495, 364);
+			names.setTexture(namestex);
+		}
+
+		/* Set solve menu sprites. */
+		{
+			solve_bg.setTexture(solve_bgtex);
+			solve_bg.setPosition(0, 0);
+
+			back.setTexture(backtex);
+			back.setTextureRect(IntRect(0, 0, 200, 70));
+			back.setPosition(60, 50);
+
+			OK.setTexture(OKtex);
+			OK.setTextureRect(IntRect(0, 0, 290, 44));
+			OK.setPosition(512, 510);
+
+			ud_arrow[0].setTexture(ud_arrowtex);
+			ud_arrow[0].setTextureRect(IntRect(0, 0, 35, 30));
+			ud_arrow[0].setPosition(432, 329);
+
+			ud_arrow[1].setTexture(ud_arrowtex);
+			ud_arrow[1].setTextureRect(IntRect(70, 0, 35, 30));
+			ud_arrow[1].setPosition(432, 363);
+
+			ud_arrow[2].setTexture(ud_arrowtex);
+			ud_arrow[2].setTextureRect(IntRect(0, 0, 35, 30));
+			ud_arrow[2].setPosition(432, 395);
+
+			ud_arrow[3].setTexture(ud_arrowtex);
+			ud_arrow[3].setTextureRect(IntRect(70, 0, 35, 30));
+			ud_arrow[3].setPosition(432, 429);
+
+			size[0].setFont(proxima);
+			size[0].setCharacterSize(40);
+			size[0].setColor(Color(189, 189, 189));			
+			size[0].setPosition(375, 337);
+			size[0].setString(N2S(5));
+
+			size[1].setFont(proxima);
+			size[1].setCharacterSize(40);
+			size[1].setColor(Color(189, 189, 189));
+			size[1].setPosition(375, 402);
+			size[1].setString(N2S(5));
+
+			ctrl.setTexture(ctrltex);
+			ctrl.setPosition(486, 368);
+			hint = false;
+
+			cap.setFillColor(Color(39, 39, 39, 200));
+			cap.setSize(Vector2f(596, 306));
+			cap.setPosition(684, 170);
+			activeleft = true;
+			activeright = false;
 		}
 	}
 
@@ -1177,16 +1243,39 @@ public:
 	{
 		window.clear(Color(39, 39, 39));
 
-		window.draw(tops);
+		window.draw(play_bg);
 		window.draw(color[0]);
 		window.draw(color[1]);
 		window.draw(diff[0]);
 		window.draw(diff[1]);
 		window.draw(diff[2]);
-		window.draw(arrow[0]);
-		window.draw(arrow[1]);
+		window.draw(lr_arrow[0]);
+		window.draw(lr_arrow[1]);
 		window.draw(start);
 		window.draw(names);
+	}
+
+	void DrawSolve(RenderWindow &window)
+	{
+		window.clear(Color(39, 39, 39));
+
+		window.draw(solve_bg);
+		window.draw(back);
+		window.draw(OK);
+		window.draw(size[0]);
+		window.draw(size[1]);
+		window.draw(ud_arrow[0]);
+		window.draw(ud_arrow[1]);
+		window.draw(ud_arrow[2]);
+		window.draw(ud_arrow[3]);
+		window.draw(color[0]);
+		window.draw(color[1]);
+		window.draw(lr_arrow[0]);
+		window.draw(lr_arrow[1]);
+		window.draw(names);
+		if (hint)
+			window.draw(ctrl);
+		window.draw(cap);
 	}
 
 	char TitleEventReaction(Event event, int width, int height)
@@ -1195,6 +1284,7 @@ public:
 		{
 			int xpos = event.mouseMove.x;
 			int ypos = event.mouseMove.y;
+
 			if (xpos > width / 2 - 135 && xpos < width / 2 + 135)
 			{
 				if (ypos > height / 2 - 150 && ypos < height / 2 - 50)
@@ -1218,6 +1308,7 @@ public:
 				exit.setTextureRect(IntRect(540, 0, 270, 100));
 			}
 		}
+
 		if (event.type == Event::MouseButtonReleased)
 		{
 			int xpos = event.mouseButton.x;
@@ -1225,14 +1316,55 @@ public:
 
 			if (xpos > width / 2 - 135 && xpos < width / 2 + 135)
 			{
+				/* Play. */
 				if (ypos > height / 2 - 150 && ypos < height / 2 - 50)
+				{
+					color[0].setTextureRect(IntRect(480, 0, 240, 50));
+					color[0].setPosition(420, 160);
+					bcolor[0] = true;;
+					color[1].setTextureRect(IntRect(720, 0, 150, 50));
+					color[1].setPosition(687, 160);
+					bcolor[1] = false;
+
+					lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+					lr_arrow[0].setPosition(440, 360);
+					lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+					lr_arrow[1].setPosition(800, 360);
+
+					name = 0;
+					names.setTextureRect(IntRect(0, 0, 290, 44));
+					names.setPosition(495, 364);
+
 					return 'p';
+				}					
+
+				/* Solve. */
 				if (ypos > height / 2 - 50 && ypos < height / 2 + 50)
+				{
+					color[0].setTextureRect(IntRect(480, 0, 240, 50));
+					color[0].setPosition(766, 338);
+					bcolor[0] = true;
+					color[1].setTextureRect(IntRect(720, 0, 150, 50));
+					color[1].setPosition(1033, 338);
+					bcolor[1] = false;
+
+					lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+					lr_arrow[0].setPosition(777, 403);
+					lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+					lr_arrow[1].setPosition(1137, 403);
+
+					name = 0;
+					names.setTextureRect(IntRect(0, 0, 290, 44));
+					names.setPosition(832, 407);
 					return 's';
+				}
+
+				/* Exit. */
 				if (ypos > height / 2 + 50 && ypos < height / 2 + 150)
 					return 'e';
 			}
 		}
+
 		return '0';
 	}
 
@@ -1246,9 +1378,9 @@ public:
 			/* Check mouse movement. */
 			{
 				if (xpos < 265 && xpos > 55 && ypos > 50 && ypos < 120)
-					tops.setTextureRect(IntRect(0, 130, 1280, 130));
+					play_bg.setTextureRect(IntRect(0, 130, 1280, 130));
 				else
-					tops.setTextureRect(IntRect(0, 0, 1280, 130));
+					play_bg.setTextureRect(IntRect(0, 0, 1280, 130));
 
 				if (bcolor[0] == false)
 					if (xpos > 420 && xpos < 660 && ypos > 160 && ypos < 210)
@@ -1281,14 +1413,14 @@ public:
 						diff[2].setTextureRect(IntRect(780, 0, 110, 50));
 
 				if (xpos > 440 && xpos < 480 && ypos > 360 && ypos < 410 && name > 0)
-					arrow[0].setTextureRect(IntRect(40, 0, 40, 50));
+					lr_arrow[0].setTextureRect(IntRect(40, 0, 40, 50));
 				else
-					arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+					lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
 
 				if (xpos > 800 && xpos < 840 && ypos > 360 && ypos < 410 && name < 6)
-					arrow[1].setTextureRect(IntRect(120, 0, 40, 50));
+					lr_arrow[1].setTextureRect(IntRect(120, 0, 40, 50));
 				else
-					arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+					lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
 
 				if (xpos > 495 && xpos < 785 && ypos > 470 && ypos < 514)
 					start.setTextureRect(IntRect(290, 0, 290, 44));
@@ -1297,6 +1429,7 @@ public:
 			}
 
 		}
+
 		if (event.type == Event::MouseButtonReleased)
 		{
 			int xpos = event.mouseButton.x;
@@ -1306,7 +1439,7 @@ public:
 			{
 				if (xpos < 265 && xpos > 55 && ypos > 50 && ypos < 120)
 				{
-					tops.setTextureRect(IntRect(0, 0, 1280, 130));
+					play_bg.setTextureRect(IntRect(0, 0, 1280, 130));
 					return 0;
 				}
 
@@ -1361,20 +1494,266 @@ public:
 				{
 					names.setTextureRect(IntRect(--name * 290, 0, 290, 44));
 					if (name == 0)
-						arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+						lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
 				}
 
 				if (xpos > 800 && xpos < 840 && ypos > 360 && ypos < 410 && name < 6)
 				{
 					names.setTextureRect(IntRect(++name * 290, 0, 290, 44));
 					if (name == 6)
-						arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+						lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
 				}
 
 				if (xpos > 495 && xpos < 785 && ypos > 470 && ypos < 514)
 					return 1;
 			}
 		}
+
+		return 2;
+	}
+	
+	int SolveEventReaction(Event event)
+	{
+		if (event.type == Event::MouseMoved)
+		{
+			int xpos = event.mouseMove.x;
+			int ypos = event.mouseMove.y;
+
+			/* OK and Back buttons. */
+			{
+				if (xpos > 512 && xpos < 803 && ypos > 510 && ypos < 554)
+					OK.setTextureRect(IntRect(290, 0, 290, 44));
+				else
+					OK.setTextureRect(IntRect(0, 0, 290, 44));
+
+				if (xpos < 265 && xpos > 55 && ypos > 50 && ypos < 120)
+					back.setTextureRect(IntRect(200, 0, 200, 70));
+				else
+					back.setTextureRect(IntRect(0, 0, 200, 70));
+			}
+
+			if (activeright)
+			{
+				/* Left&Right buttons. */
+				{
+					if (xpos > 777 && xpos < 817 && ypos > 403 && ypos < 453 && name > 0)
+						lr_arrow[0].setTextureRect(IntRect(40, 0, 40, 50));
+					else
+						lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+
+					if (xpos > 1137 && xpos < 1177 && ypos > 403 && ypos < 453 && name < 6)
+						lr_arrow[1].setTextureRect(IntRect(120, 0, 40, 50));
+					else
+						lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+				}
+
+				/* B&W and Colored buttons. */
+				{
+					if (bcolor[0] == false)
+						if (xpos > 766 && xpos < 1006 && ypos > 338 && ypos < 388)
+							color[0].setTextureRect(IntRect(240, 0, 240, 50));
+						else
+							color[0].setTextureRect(IntRect(0, 0, 240, 50));
+					if (bcolor[1] == false)
+						if (xpos > 1033 && xpos < 1183 && ypos > 338 && ypos < 388)
+							color[1].setTextureRect(IntRect(870, 0, 150, 50));
+						else
+							color[1].setTextureRect(IntRect(720, 0, 150, 50));
+				}
+
+				/* Left part. */
+				{
+					if (xpos > 93 && xpos < 518 && ypos > 183 && ypos < 303)
+						cap.setFillColor(Color(39, 39, 39, 100));
+					else
+						cap.setFillColor(Color(39, 39, 39, 200));
+				}
+			}
+			if (activeleft)
+			{
+				/* Up&down buttons. */
+				if (xpos > 432 && xpos < 467 && ypos > 329 && ypos < 393 + 66)
+				{
+					hint = true;
+
+					if (xpos > 432 && xpos < 467 && ypos > 329 && ypos < 359 && width < 99)
+						ud_arrow[0].setTextureRect(IntRect(35, 0, 35, 30));
+					else
+						ud_arrow[0].setTextureRect(IntRect(0, 0, 35, 30));
+
+					if (xpos > 432 && xpos < 467 && ypos > 363 && ypos < 393 && width > 1)
+						ud_arrow[1].setTextureRect(IntRect(105, 0, 35, 30));
+					else
+						ud_arrow[1].setTextureRect(IntRect(70, 0, 35, 30));
+
+					if (xpos > 432 && xpos < 467 && ypos > 329 + 66 && ypos < 359 + 66 && height < 99)
+						ud_arrow[2].setTextureRect(IntRect(35, 0, 35, 30));
+					else
+						ud_arrow[2].setTextureRect(IntRect(0, 0, 35, 30));
+
+					if (xpos > 432 && xpos < 467 && ypos > 363 + 66 && ypos < 393 + 66 && height > 1)
+						ud_arrow[3].setTextureRect(IntRect(105, 0, 35, 30));
+					else
+						ud_arrow[3].setTextureRect(IntRect(70, 0, 35, 30));
+				}
+				else
+				{
+					hint = false;
+					ud_arrow[0].setTextureRect(IntRect(0, 0, 35, 30));
+					ud_arrow[1].setTextureRect(IntRect(70, 0, 35, 30));
+					ud_arrow[2].setTextureRect(IntRect(0, 0, 35, 30));
+					ud_arrow[3].setTextureRect(IntRect(70, 0, 35, 30));
+				}
+
+				/* Right part. */
+				{
+					if (xpos > 778 && xpos < 1142 && ypos > 191 && ypos < 301)
+						cap.setFillColor(Color(39, 39, 39, 100));
+					else
+						cap.setFillColor(Color(39, 39, 39, 200));
+				}
+			}
+		}
+
+		if (event.type == Event::MouseButtonReleased)
+		{
+			int xpos = event.mouseButton.x;
+			int ypos = event.mouseButton.y;
+
+			/* OK and Back buttons. */
+			{
+				if (xpos > 512 && xpos < 803 && ypos > 510 && ypos < 554)
+					return 1;
+
+				if (xpos < 265 && xpos > 55 && ypos > 50 && ypos < 120)
+				{
+					back.setTextureRect(IntRect(0, 0, 200, 70));
+					return 0;
+				}
+			}
+
+			if (activeright)
+			{
+				/* Left&Right buttons. */
+				{
+					if (xpos > 777 && xpos < 817 && ypos > 403 && ypos < 453 && name > 0)
+					{
+						names.setTextureRect(IntRect(--name * 290, 0, 290, 44));
+						if (name == 0)
+							lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+					}
+					if (xpos > 1137 && xpos < 1177 && ypos > 403 && ypos < 453 && name < 6)
+					{
+						names.setTextureRect(IntRect(++name * 290, 0, 290, 44));
+						if (name == 6)
+							lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+					}
+				}
+
+				/* B&W and Colored buttons. */
+				{
+					if (xpos > 766 && xpos < 1006 && ypos > 338 && ypos < 388)
+					{
+						color[0].setTextureRect(IntRect(480, 0, 240, 50));
+						bcolor[0] = true;
+						bcolor[1] = false;
+					}
+					if (xpos > 1033 && xpos < 1183 && ypos > 338 && ypos < 388)
+					{
+						color[1].setTextureRect(IntRect(1020, 0, 150, 50));
+						bcolor[1] = true;
+						bcolor[0] = false;
+					}
+				}
+
+				/* Left part. */
+				{
+					if (xpos > 93 && xpos < 518 && ypos > 183 && ypos < 303)
+					{
+						cap.setFillColor(Color(39, 39, 39, 200));
+						cap.setPosition(684, 170);
+						activeleft = true;
+						activeright = false;
+					}
+				}
+			}
+			if (activeleft)
+			{
+				/* Up&down buttons. */
+				{
+					if (xpos > 432 && xpos < 467 && ypos > 329 && ypos < 359 && width < 99)
+					{
+						if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+							if (width > 93)
+								width = 99;
+							else
+								width += 5;
+						else
+							width++;
+						size[0].setString(N2S(width));
+						if (width == 99)
+							ud_arrow[0].setTextureRect(IntRect(0, 0, 35, 40));
+					}
+
+					if (xpos > 432 && xpos < 467 && ypos > 363 && ypos < 393 && width > 1)
+					{
+						if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+							if (width > 6)
+								width -= 5;
+							else
+								width = 1;
+						else
+							width--;
+						size[0].setString(N2S(width));
+						if (width == 1)
+							ud_arrow[1].setTextureRect(IntRect(70, 0, 35, 40));
+					}
+
+					if (xpos > 432 && xpos < 467 && ypos > 329 + 66 && ypos < 359 + 66 && height < 99)
+					{
+						if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+							if (height > 93)
+								height = 99;
+							else
+								height += 5;
+						else
+							height++;
+						size[1].setString(N2S(height));
+						if (height == 99)
+							ud_arrow[2].setTextureRect(IntRect(0, 0, 35, 40));
+					}
+
+					if (xpos > 432 && xpos < 467 && ypos > 363 + 66 && ypos < 393 + 66 && height > 1)
+					{
+						if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+						{
+							if (height > 6)
+								height -= 5;
+							else
+								height = 1;
+						}
+						else
+							height--;
+						size[1].setString(N2S(height));
+						if (height == 1)
+							ud_arrow[3].setTextureRect(IntRect(70, 0, 35, 40));
+					}
+				}
+
+				/* Right part. */
+				{
+					if (xpos > 778 && xpos < 1142 && ypos > 191 && ypos < 301)
+					{
+						cap.setFillColor(Color(39, 39, 39, 200));
+						cap.setPosition(73, 170);
+						activeleft = false;
+						activeright = true;
+					}
+				}
+			}
+		}
+		
+		return 2;
 	}
 };
 
@@ -1383,6 +1762,7 @@ int main()
 {
 	bool title = true;
 	bool play = false;
+	bool solve = false;
 	char ans;
 	
 	/* Constructing the menu. */
@@ -1395,16 +1775,6 @@ int main()
 		Event event;
 		while (menuwindow.pollEvent(event))
 		{
-			/* Exit from the solving. */
-			/*if (menu == false &&
-			event.type == Event::MouseButtonReleased &&
-			event.mouseButton.x < (Field.hindex - Field.hstart) * Field.cellsize &&
-			event.mouseButton.y < (Field.vindex - Field.vstart) * Field.cellsize)
-			{
-			menu = true;
-			Field.mousepressed = false;
-			}*/
-
 			if (event.type == Event::Closed)
 			{
 				menuwindow.close();
@@ -1427,7 +1797,7 @@ int main()
 					continue;
 				case 's':
 					title = false;
-					play = true;
+					solve = true;
 					continue;
 				}
 			}
@@ -1446,20 +1816,31 @@ int main()
 				}
 			}
 
-			
+			if (solve)
+			{
+				switch (Menu.SolveEventReaction(event))
+				{
+				case 0:
+					solve = false;
+					title = true;
+					break;
+				case 1:
+					menuwindow.close();
+					break;
+				}
+			}						
 		}
 
 		if (title)
 			Menu.DrawTitle(menuwindow);
-
 		if (play)
 			Menu.DrawPlay(menuwindow);
+		if (solve)
+			Menu.DrawSolve(menuwindow);
 
 		menuwindow.display();
 
-	}
-
-	
+	}	
 
 	/* Constructing the field. */
 	BWNonogram Field(ans, Menu.name);
@@ -1472,16 +1853,6 @@ int main()
 		Event event;
 		while (window.pollEvent(event))
 		{
-			/* Exit from the solving. */
-			/*if (menu == false &&
-				event.type == Event::MouseButtonReleased &&
-				event.mouseButton.x < (Field.hindex - Field.hstart) * Field.cellsize &&
-				event.mouseButton.y < (Field.vindex - Field.vstart) * Field.cellsize)
-			{
-				menu = true;
-				Field.mousepressed = false;
-			}*/
-
 			if (event.type == Event::Closed)
 				window.close();
 			else
