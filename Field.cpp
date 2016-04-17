@@ -224,6 +224,34 @@ public:
 
 	}
 
+	BWNonogram(int x, int y)
+	{
+		answer = 'm';
+		button = 0;
+		solved = false;
+		mousepressed = false;
+
+		width = x;
+		height = y;
+		hindex = (width + 1) / 2;
+		vindex = (height + 1) / 2;
+		hstart = 0;
+		vstart = 0;
+
+		if (height > 50)
+			cellsize = 1000 / (height + vindex - vstart);
+		else
+			cellsize = 500 / (height + vindex - vstart);
+		
+		horizontal = CreateArr(height, hindex);
+		vertical = CreateArr(vindex, width);
+
+		CreateField();
+
+		wx = (width + hindex - hstart) * cellsize + 1;
+		wy = (height + vindex - vstart) * cellsize + 1;
+	}
+
 	/* Create an array of cells and a grid with lines.. */
 	void CreateField()
 	{
@@ -356,7 +384,7 @@ public:
 		hstart = hindex - hstart;
 		vstart = vindex - vstart;
 
-		cellsize = 600 / (height + vindex - vstart);
+		cellsize = 800 / (height + vindex - vstart);
 
 		horizontal = CreateArr(height, hindex);
 		vertical = CreateArr(vindex, width);
@@ -560,21 +588,55 @@ public:
 	}
 
 	/* Call main algorithm and check if the solving is correct. */
-	bool Solve()
+	int Solve(bool first)
 	{
-		if (answer != 's' || solved == true)
-			return false;
+		if (answer != 's' && answer != 'm' || solved == true)
+			return 0;
 
-		bool checkifsolved = true;
+		/* The easiest check for incorrect input. Works only once. */
+		if (first)
+		{
+			int sum = 0;
+			for (int i = 0; i < height; i++)
+				for (int j = 0; j < hindex; j++)
+					sum += horizontal[i][j];
+			for (int i = 0; i < vindex; i++)
+				for (int j = 0; j < width; j++)
+					sum -= vertical[i][j];
+			if (sum != 0)
+				return 2;
+		}
+		
+		/* Check if the algorithm has not solved but stopped. */
+		if (answer == 'm')
+		{
+			bool solvingfreeze = true;;
+			for (int j = 0; j < height; j++)
+				if (hchange[j] == true)
+				{
+					solvingfreeze = false;
+					break;
+				}
+			if (solvingfreeze)
+				for (int j = 0; j < width; j++)
+					if (vchange[j] == true)
+					{
+						solvingfreeze = false;
+						break;
+					}
+			if (solvingfreeze)
+				return 2;
+		}
 
 		CheckHor();
 		for (int j = 0; j < height; j++)
 			hchange[j] = false;
 		CheckVert();
 		for (int j = 0; j < width; j++)
-			vchange[j] = false;
+			vchange[j] = false;		
 
 		/* Detects solved nonogram by finding 0 PWHITE cells. */
+		bool checkifsolved = true;
 		for (int i = 0; i < height; i++)
 		{
 			for (int j = 0; j < width; j++)
@@ -592,9 +654,10 @@ public:
 			std::system("cls");
 			std::cout << "CORRECT!\nCONGRATULATIONS!";
 			solved = true;
+			return 1;
 		}
 
-		return checkifsolved;
+		return 0;
 
 	}
 
@@ -1029,6 +1092,96 @@ public:
 		}
 	}
 
+	/* Event for manual mode. */
+	void ManEventReaction(Event event)
+	{
+		int xpos, ypos;
+
+		switch (event.type)
+		{
+		case Event::MouseButtonReleased:
+			xpos = event.mouseButton.x;
+			ypos = event.mouseButton.y;
+
+			/* Vertical blocks description handling. */
+			if (ypos < vindex * cellsize && xpos > hindex * cellsize)
+			{
+				xpos = xpos / cellsize - hindex;
+				ypos = ypos / cellsize;
+
+				if (event.mouseButton.button == Mouse::Left)
+				{
+					if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+					{
+						vertical[ypos][xpos] += 5;
+						vertext[ypos][xpos].setString(N2S(vertical[ypos][xpos]));
+					}
+					else
+						vertext[ypos][xpos].setString(N2S(++vertical[ypos][xpos]));
+				}
+
+				if (event.mouseButton.button == Mouse::Right && vertical[ypos][xpos] > 0)
+				{
+					if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+					{
+						vertical[ypos][xpos] -= 5;
+						if (vertical[ypos][xpos] < 0)
+							vertical[ypos][xpos] = 0;
+						vertext[ypos][xpos].setString(N2S(vertical[ypos][xpos]));
+					}
+					else
+						vertext[ypos][xpos].setString(N2S(--vertical[ypos][xpos]));					
+				}
+
+				/* Align. */
+				if (vertical[ypos][xpos] < 10)
+					vertext[ypos][xpos].setPosition((xpos + hindex - hstart) * cellsize + cellsize / 5, (ypos - vstart) * cellsize);
+				else
+					vertext[ypos][xpos].setPosition((xpos + hindex - hstart) * cellsize, (ypos - vstart) * cellsize);
+			}
+
+			/* Horizontal blocks description handling. */
+			if (ypos > vindex * cellsize && xpos < hindex * cellsize)
+			{
+				xpos = xpos / cellsize;
+				ypos = ypos / cellsize - vindex;
+
+				if (event.mouseButton.button == Mouse::Left)
+				{
+					if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+					{
+						horizontal[ypos][xpos] += 5;
+						hortext[ypos][xpos].setString(N2S(horizontal[ypos][xpos]));
+					}
+					else
+						hortext[ypos][xpos].setString(N2S(++horizontal[ypos][xpos]));
+				}
+
+				if (event.mouseButton.button == Mouse::Right && horizontal[ypos][xpos] > 0)
+				{
+					if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+					{
+						horizontal[ypos][xpos] -= 5;
+						if (horizontal[ypos][xpos] < 0)
+							horizontal[ypos][xpos] = 0;
+						hortext[ypos][xpos].setString(N2S(horizontal[ypos][xpos]));
+					}
+					else
+						hortext[ypos][xpos].setString(N2S(--horizontal[ypos][xpos]));
+				}
+
+				/* Align. */
+				if (horizontal[ypos][xpos] < 10)
+					hortext[ypos][xpos].setPosition((xpos - hstart) * cellsize + cellsize / 5, (ypos + vindex - vstart) * cellsize);
+				else
+					hortext[ypos][xpos].setPosition((xpos - hstart) * cellsize, (ypos + vindex - vstart) * cellsize);
+			}
+
+			break;
+		}
+
+	}
+
 	/* Draw field, grid and description. */
 	void Draw(RenderWindow &window)
 	{
@@ -1050,7 +1203,6 @@ public:
 			for (int j = hstart; j < hindex; j++)
 				if (horizontal[i][j])
 					window.draw(hortext[i][j]);
-
 
 		/* Vertical description. */
 		for (int i = vstart; i < vindex; i++)
@@ -1623,7 +1775,10 @@ public:
 			/* OK and Back buttons. */
 			{
 				if (xpos > 512 && xpos < 803 && ypos > 510 && ypos < 554)
-					return 1;
+					if (activeright)
+						return 1;
+					else
+						return 2;
 
 				if (xpos < 265 && xpos > 55 && ypos > 50 && ypos < 120)
 				{
@@ -1753,7 +1908,7 @@ public:
 			}
 		}
 		
-		return 2;
+		return 3;
 	}
 };
 
@@ -1765,11 +1920,12 @@ int main()
 	bool solve = false;
 	char ans;
 	
-	/* Constructing the menu. */
+	/* Construct the menu. */
 	MainMenu Menu(MENUWIDTH, MENUHEIGHT);
 
 	RenderWindow menuwindow(VideoMode(MENUWIDTH, MENUHEIGHT), "Menu", Style::Close);
 
+	/* Main menu. */
 	while (menuwindow.isOpen())
 	{
 		Event event;
@@ -1827,6 +1983,10 @@ int main()
 				case 1:
 					menuwindow.close();
 					break;
+				case 2:
+					ans = 'm';
+					menuwindow.close();
+					break;
 				}
 			}						
 		}
@@ -1839,11 +1999,66 @@ int main()
 			Menu.DrawSolve(menuwindow);
 
 		menuwindow.display();
-
 	}	
+	
 
-	/* Constructing the field. */
+	BWNonogram ManField(Menu.width, Menu.height);
+
+	/* Manual nonogram input. */
+	if (ans == 'm')
+	{
+		RenderWindow window(VideoMode(ManField.wx, ManField.wy), "Field", Style::Close);
+
+		while (window.isOpen())
+		{
+			Event event;		
+			while (window.pollEvent(event))
+			{
+				if (event.type == Event::KeyPressed)
+					if (event.key.code == Keyboard::Return)
+					{
+						if (ManField.Solve(true) == 2)
+						{
+							std::cout << "Incorrect input. \n";
+							break;
+						}
+
+						bool incorr = false;
+						while (!ManField.solved)
+						{
+							switch (ManField.Solve(false))
+							{
+							case 1:
+								window.close();
+								break;
+							case 2:
+								std::cout << "Incorrect input. \n";
+								incorr = true;
+								break;
+							}
+							if (incorr)
+								break;
+						}						
+					}						
+
+				if (event.type == Event::Closed)
+					return 0;
+				else						
+					ManField.ManEventReaction(event);				
+			}
+
+			ManField.Draw(window);
+
+			window.display();
+		}
+	}		
+		
+	
+	/* Construct main field. */
 	BWNonogram Field(ans, Menu.name);
+
+	if (ans == 'm')
+		Field = ManField;
 	
 	/* Create a window. */
 	RenderWindow window(VideoMode(Field.wx, Field.wy), "Field", Style::Close);
@@ -1858,13 +2073,13 @@ int main()
 			else
 				Field.EventReaction(event);
 		}
-
 		
 		Field.Draw(window);
 
 		window.display();
 
-		Field.Solve();
+		if (Field.answer == 's')
+			Field.Solve(false);
 
 	}
 
