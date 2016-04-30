@@ -1,7 +1,3 @@
-/*
-* Field.
-*/
-
 #include "stdafx.h"
 #include <iostream>
 #include <fstream>
@@ -13,6 +9,8 @@
 
 #define MENUWIDTH 1280
 #define MENUHEIGHT 600
+#define WINWIDTH MENUWIDTH
+#define WINHEIGHT MENUHEIGHT
 #define DELETE_2D_ARRAY(arr, height) for (int i = 0; i < height; ++i)\
 	delete[] arr[i];\
 	delete[] arr;
@@ -98,13 +96,13 @@ public:
 			break;
 		}
 
-		case 2:
+		/*case 2:
 		{
 			cellsprite.setTextureRect(IntRect(0, 0, 128, 128));
 			state = PWHITE;
 			return 0;
 			break;
-		}
+		}*/
 
 		default:
 			break;
@@ -147,7 +145,12 @@ public:
 	char answer;			/* Solve or Play? */
 	bool solved;			/* If solved (true) nonogram cannot be changed. */
 	bool mousepressed;		/* If true, then mouse motion should change cells' state. */
+	bool middlepressed;		/* If true, then mouse motion changes view. */
 	int button;				/* Remembers new state of the cell. */
+	int mxpos;				/* Stores x-position of the last middle-button click. */
+	int mypos;				/* Stores y-position of the last middle-button click. */
+	int fieldx;				/* X-shift. */
+	int fieldy;				/* Y-shift. */
 
 	int width;				/* Width of the field, in cells. */
 	int height;				/* Height of the field, in cells. */
@@ -203,6 +206,9 @@ public:
 		button = 0;
 		solved = false;
 		mousepressed = false;
+		middlepressed = false;
+		fieldx = 0;
+		fieldy = 0;
 
 		ReadDescription();
 		CreateField();
@@ -235,6 +241,9 @@ public:
 		button = 0;
 		solved = false;
 		mousepressed = false;
+		middlepressed = false;
+		fieldx = 0;
+		fieldy = 0;
 
 		width = x;
 		height = y;
@@ -244,11 +253,11 @@ public:
 		vstart = 0;
 		
 		cellsize = 32;
-		if (32 * height > 700 || 32 * width > 1200)
-			cellsize = height > width ? 700 / height : 1200 / width;
 		
 		horizontal = CreateArr(height, hindex);
 		vertical = CreateArr(vindex, width);
+		hcurrdescr = CreateArr(height, hindex);
+		vcurrdescr = CreateArr(vindex, width);
 
 		CreateField();
 
@@ -257,15 +266,11 @@ public:
 	}
 
 	/* Destructor. */
-#if 0
+	#if 0
 	~BWNonogram()
-	{
-		if (answer != 'm')
-		{
-			std::cout << "Starting Field destructing...\n";
-			DELETE_2D_ARRAY(hcurrdescr, height);
-			DELETE_2D_ARRAY(vcurrdescr, vindex);
-		}
+	{		
+		DELETE_2D_ARRAY(hcurrdescr, height);
+		DELETE_2D_ARRAY(vcurrdescr, vindex);		
 		DELETE_2D_ARRAY(horizontal, height);
 		DELETE_2D_ARRAY(vertical, vindex);		
 		DELETE_2D_ARRAY(cellarr, height);
@@ -276,7 +281,7 @@ public:
 		DELETE_1D_ARRAY(hline);
 		DELETE_1D_ARRAY(vline);
 	}
-#endif
+	#endif
 
 	/* Create an array of cells and a grid with lines.. */
 	void CreateField()
@@ -387,7 +392,7 @@ public:
 				cellarr[i][j].cellsprite.setPosition((j + hindex - hstart) * cellsize, (i + vindex - vstart) * cellsize);
 				cellarr[i][j].cellsprite.setTexture(celltex);
 				cellarr[i][j].cellsprite.scale((float)cellsize / 128, (float)cellsize / 128);
-				cellarr[i][j].ChangeStateClick(2);
+				cellarr[i][j].ChangeStateSolve(0);
 				cellarr[i][j].black = false;
 				cellarr[i][j].white = false;
 			}
@@ -410,7 +415,7 @@ public:
 		hstart = hindex - hstart;
 		vstart = vindex - vstart;
 
-		cellsize = 800 / (height + vindex - vstart);
+		cellsize = 32;
 
 		horizontal = CreateArr(height, hindex);
 		vertical = CreateArr(vindex, width);
@@ -444,7 +449,7 @@ public:
 		int blcount = 0;	/* Amount of blocks in a line/column. */
 		int blsize = 0;		/* Amount of black cells in a block. */
 
-							/* Walk through horizontal blocks. */
+		/* Walk through horizontal blocks. */
 		for (int j = width - 1; j >= 0; j--)
 		{
 			if (cellarr[ypos][j].state == DBLACK)
@@ -671,6 +676,55 @@ public:
 		return true;
 	}
 
+	/* The last check for correct solve. */
+	bool LastCheck()
+	{
+		int blcount = 0;	/* Amount of blocks in a line/column. */
+		int blsize = 0;		/* Amount of black cells in a block. */
+
+		/* Walk through horizontal blocks. */
+		for (int i = 0; i < height; i++)
+		{
+			blcount = 0;
+			blsize = 0;
+			for (int j = width - 1; j >= 0; j--)
+			{
+				if (cellarr[i][j].state == DBLACK)
+				{
+					blsize++;
+					if (j == 0 || cellarr[i][j - 1].state == PWHITE || cellarr[i][j - 1].state == DWHITE)
+					{
+						blcount++;
+						hcurrdescr[i][hindex - blcount] = blsize;
+						blsize = 0;
+					}
+				}
+			}
+		}
+
+		/* Walk through vertical blocks. */
+		for (int j = 0; j < width; j++)
+		{
+			blcount = 0;
+			blsize = 0;
+			for (int i = height - 1; i >= 0; i--)
+			{
+				if (cellarr[i][j].state == DBLACK)
+				{
+					blsize++;
+					if (i == 0 || cellarr[i - 1][j].state == PWHITE || cellarr[i - 1][j].state == DWHITE)
+					{
+						blcount++;
+						vcurrdescr[vindex - blcount][j] = blsize;
+						blsize = 0;
+					}
+				}
+			}
+		}
+	
+		return CheckUser();
+	}
+
 	/* Call main algorithm and check if the solving is correct. */
 	int Solve(bool first)
 	{
@@ -735,7 +789,18 @@ public:
 
 		if (checkifsolved)
 		{
-			//std::system("cls");
+			if (LastCheck() == false)
+			{
+				for (int i = 0; i < height; i++)
+					for (int j = 0; j < width; j++)
+					{
+						cellarr[i][j].ChangeStateSolve(0);
+						cellarr[i][j].black = false;
+						cellarr[i][j].white = false;
+					}
+				return 2;
+			}
+			std::system("cls");
 			std::cout << "CORRECT!\nCONGRATULATIONS!";
 			solved = true;
 			return 1;
@@ -844,8 +909,7 @@ public:
 				}
 			}
 		}
-
-
+		
 	}
 
 	/* Check all vertical lines. */
@@ -1089,17 +1153,26 @@ public:
 	}
 
 	/* Event switch case. */
-	void EventReaction(Event event)
+	void EventReaction(Event event, View &view)
 	{
 		int xpos, ypos;
 
 		switch (event.type)
 		{
 		case Event::MouseButtonPressed:
+		{
+			if (event.mouseButton.button == Mouse::Middle || event.mouseButton.button == Mouse::Left && Keyboard::isKeyPressed(Keyboard::LAlt))
+			{
+				mxpos = event.mouseButton.x;
+				mypos = event.mouseButton.y;
+				middlepressed = true;
+				break;
+			}
+
 			if (answer == 'p' && solved == false)
 			{
-				xpos = (event.mouseButton.x - (hindex - hstart) * cellsize) / cellsize;
-				ypos = (event.mouseButton.y - (vindex - vstart) * cellsize) / cellsize;
+				xpos = (event.mouseButton.x - fieldx - (hindex - hstart) * cellsize) / cellsize;
+				ypos = (event.mouseButton.y - fieldy - (vindex - vstart) * cellsize) / cellsize;
 
 				/* Breaks if the click is not within the field. */
 				if (xpos < 0 || ypos < 0)
@@ -1125,13 +1198,15 @@ public:
 				mousepressed = true;
 			}
 			break;
+		}
 
 		case Event::MouseMoved:
+		{
 			/* Works only when the mouse button is pressed.*/
 			if (mousepressed)
 			{
-				xpos = (event.mouseMove.x - (hindex - hstart) * cellsize) / cellsize;
-				ypos = (event.mouseMove.y - (vindex - vstart) * cellsize) / cellsize;
+				xpos = (event.mouseMove.x - fieldx - (hindex - hstart) * cellsize) / cellsize;
+				ypos = (event.mouseMove.y - fieldy - (vindex - vstart) * cellsize) / cellsize;
 
 				/* Breaks if the click is not within the field. */
 				if (xpos < 0 || ypos < 0 || xpos >= width || ypos >= height)
@@ -1151,14 +1226,67 @@ public:
 				}
 			}
 
-			break;
+			if (middlepressed)
+			{
+				if (wx > WINWIDTH)
+				{					
+					if (fieldx - mxpos + event.mouseMove.x <= 0 && fieldx - mxpos + event.mouseMove.x >= WINWIDTH - wx)
+					{
+						view.move(mxpos - event.mouseMove.x, 0);
+						fieldx -= mxpos - event.mouseMove.x;
+						mxpos = event.mouseMove.x;
+					}
+					else
+					{
+						if (fieldx - mxpos + event.mouseMove.x > 0)
+						{
+							view.move(fieldx, 0);
+							fieldx = 0;
+						}
+						if (fieldx - mxpos + event.mouseMove.x < WINWIDTH - wx)
+						{
+							view.move(fieldx - WINWIDTH + wx, 0);
+							fieldx = WINWIDTH - wx;
+						}
+					}
+				}
+				if (wy > WINHEIGHT)
+				{
+					if (fieldy - mypos + event.mouseMove.y <= 0 && fieldy - mypos + event.mouseMove.y >= WINHEIGHT - wy)
+					{
+						view.move(0, mypos - event.mouseMove.y);
+						fieldy -= mypos - event.mouseMove.y;
+						mypos = event.mouseMove.y;
+					}
+					else
+					{
+						if (fieldy - mypos + event.mouseMove.y > 0)
+						{
+							view.move(0, fieldy);
+							fieldy = 0;
+						}
+						if (fieldy - mypos + event.mouseMove.y < WINHEIGHT - wy)
+						{
+							view.move(0, fieldy - WINHEIGHT + wy);
+							fieldy = WINHEIGHT - wy;
+						}
+					}
+				}
+			}
 
+			break;
+		}
+			
 		case Event::MouseButtonReleased:
+		{
 			/* If mouse button is not pressed anymore, mouse movement shouldn't cause cell change. */
 			mousepressed = false;
+			middlepressed = false;
 			break;
+		}
 
 		case Event::KeyPressed:
+		{
 			/* Stop solving. */
 			if (event.key.code == Keyboard::Space && answer == 's')
 				solved = true;
@@ -1170,6 +1298,7 @@ public:
 				SaveDrawnDescription();
 
 			break;
+		}
 
 		default:
 			break;
@@ -1177,25 +1306,90 @@ public:
 	}
 
 	/* Event for manual mode. */
-	void ManEventReaction(Event event)
-	{
-		int xpos, ypos;
-
+	void ManEventReaction(Event event, View &view)
+	{		
 		switch (event.type)
 		{
+		case Event::MouseMoved:
+		{
+			if (middlepressed)
+			{
+				if (wx > WINWIDTH)
+				{
+					if (fieldx - mxpos + event.mouseMove.x <= 0 && fieldx - mxpos + event.mouseMove.x >= WINWIDTH - wx)
+					{
+						view.move(mxpos - event.mouseMove.x, 0);
+						fieldx -= mxpos - event.mouseMove.x;
+						mxpos = event.mouseMove.x;
+					}
+					else
+					{
+						if (fieldx - mxpos + event.mouseMove.x > 0)
+						{
+							view.move(fieldx, 0);
+							fieldx = 0;
+						}
+						if (fieldx - mxpos + event.mouseMove.x < WINWIDTH - wx)
+						{
+							view.move(fieldx - WINWIDTH + wx, 0);
+							fieldx = WINWIDTH - wx;
+						}
+					}
+				}
+				if (wy > WINHEIGHT)
+				{
+					if (fieldy - mypos + event.mouseMove.y <= 0 && fieldy - mypos + event.mouseMove.y >= WINHEIGHT - wy)
+					{
+						view.move(0, mypos - event.mouseMove.y);
+						fieldy -= mypos - event.mouseMove.y;
+						mypos = event.mouseMove.y;
+					}
+					else
+					{
+						if (fieldy - mypos + event.mouseMove.y > 0)
+						{
+							view.move(0, fieldy);
+							fieldy = 0;
+						}
+						if (fieldy - mypos + event.mouseMove.y < WINHEIGHT - wy)
+						{
+							view.move(0, fieldy - WINHEIGHT + wy);
+							fieldy = WINHEIGHT - wy;
+						}
+					}
+				}
+			}
+			break;
+		}
+
+		case Event::MouseButtonPressed:
+		{
+			if (event.mouseButton.button == Mouse::Middle || event.mouseButton.button == Mouse::Left && Keyboard::isKeyPressed(Keyboard::LAlt))
+			{
+				mxpos = event.mouseButton.x;
+				mypos = event.mouseButton.y;
+				middlepressed = true;
+			}
+			break;
+		}
+
 		case Event::MouseButtonReleased:
-			xpos = event.mouseButton.x;
-			ypos = event.mouseButton.y;
+		{
+			middlepressed = false;
+			if (event.mouseButton.button == Mouse::Middle)
+				break;
+
+			int xpos = event.mouseButton.x, ypos = event.mouseButton.y;
 
 			/* Vertical blocks description handling. */
-			if (ypos < vindex * cellsize && xpos > hindex * cellsize)
+			if (ypos - fieldy < vindex * cellsize && xpos - fieldx > hindex * cellsize)
 			{
-				xpos = xpos / cellsize - hindex;
-				ypos = ypos / cellsize;
+				xpos = (xpos - fieldx) / cellsize - hindex;
+				ypos = (ypos - fieldy) / cellsize;
 
 				if (event.mouseButton.button == Mouse::Left)
 				{
-					if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+					if (Keyboard::isKeyPressed(Keyboard::LControl))
 					{
 						vertical[ypos][xpos] += 5;
 						vertext[ypos][xpos].setString(N2S(vertical[ypos][xpos]));
@@ -1206,7 +1400,7 @@ public:
 
 				if (event.mouseButton.button == Mouse::Right && vertical[ypos][xpos] > 0)
 				{
-					if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+					if (Keyboard::isKeyPressed(Keyboard::LControl))
 					{
 						vertical[ypos][xpos] -= 5;
 						if (vertical[ypos][xpos] < 0)
@@ -1214,7 +1408,7 @@ public:
 						vertext[ypos][xpos].setString(N2S(vertical[ypos][xpos]));
 					}
 					else
-						vertext[ypos][xpos].setString(N2S(--vertical[ypos][xpos]));					
+						vertext[ypos][xpos].setString(N2S(--vertical[ypos][xpos]));
 				}
 
 				/* Align. */
@@ -1225,14 +1419,14 @@ public:
 			}
 
 			/* Horizontal blocks description handling. */
-			if (ypos > vindex * cellsize && xpos < hindex * cellsize)
+			if (ypos - fieldy > vindex * cellsize && xpos - fieldx < hindex * cellsize)
 			{
-				xpos = xpos / cellsize;
-				ypos = ypos / cellsize - vindex;
+				xpos = (xpos - fieldx) / cellsize;
+				ypos = (ypos - fieldy) / cellsize - vindex;
 
 				if (event.mouseButton.button == Mouse::Left)
 				{
-					if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+					if (Keyboard::isKeyPressed(Keyboard::LControl))
 					{
 						horizontal[ypos][xpos] += 5;
 						hortext[ypos][xpos].setString(N2S(horizontal[ypos][xpos]));
@@ -1243,7 +1437,7 @@ public:
 
 				if (event.mouseButton.button == Mouse::Right && horizontal[ypos][xpos] > 0)
 				{
-					if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+					if (Keyboard::isKeyPressed(Keyboard::LControl))
 					{
 						horizontal[ypos][xpos] -= 5;
 						if (horizontal[ypos][xpos] < 0)
@@ -1262,10 +1456,13 @@ public:
 			}
 
 			break;
+		}
 
 		case Event::KeyPressed:
+		{
 			if (event.key.code == Keyboard::S)
 				SaveManualDescription();
+		}
 		}
 
 	}
@@ -1306,8 +1503,8 @@ public:
 	int name = 0;
 	bool bdiff[3];
 
-	int width = 5;
-	int height = 5;
+	int width = 40;
+	int height = 40;
 	bool hint;
 	bool activeleft;
 	bool activeright;
@@ -1434,13 +1631,13 @@ public:
 			size[0].setCharacterSize(40);
 			size[0].setColor(Color(189, 189, 189));			
 			size[0].setPosition(375, 337);
-			size[0].setString(N2S(5));
+			size[0].setString(N2S(this->width));
 
 			size[1].setFont(proxima);
 			size[1].setCharacterSize(40);
 			size[1].setColor(Color(189, 189, 189));
 			size[1].setPosition(375, 402);
-			size[1].setString(N2S(5));
+			size[1].setString(N2S(this->height));
 
 			ctrl.setTexture(ctrltex);
 			ctrl.setPosition(486, 368);
@@ -1795,7 +1992,7 @@ public:
 					else
 						ud_arrow[0].setTextureRect(IntRect(0, 0, 35, 30));
 
-					if (xpos > 432 && xpos < 467 && ypos > 363 && ypos < 393 && width > 1)
+					if (xpos > 432 && xpos < 467 && ypos > 363 && ypos < 393 && width > 3)
 						ud_arrow[1].setTextureRect(IntRect(105, 0, 35, 30));
 					else
 						ud_arrow[1].setTextureRect(IntRect(70, 0, 35, 30));
@@ -1805,7 +2002,7 @@ public:
 					else
 						ud_arrow[2].setTextureRect(IntRect(0, 0, 35, 30));
 
-					if (xpos > 432 && xpos < 467 && ypos > 363 + 66 && ypos < 393 + 66 && height > 1)
+					if (xpos > 432 && xpos < 467 && ypos > 363 + 66 && ypos < 393 + 66 && height > 3)
 						ud_arrow[3].setTextureRect(IntRect(105, 0, 35, 30));
 					else
 						ud_arrow[3].setTextureRect(IntRect(70, 0, 35, 30));
@@ -1917,7 +2114,7 @@ public:
 				{
 					if (xpos > 432 && xpos < 467 && ypos > 329 && ypos < 359 && width < 99)
 					{
-						if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+						if (Keyboard::isKeyPressed(Keyboard::LControl))
 							if (width > 93)
 								width = 99;
 							else
@@ -1929,23 +2126,23 @@ public:
 							ud_arrow[0].setTextureRect(IntRect(0, 0, 35, 40));
 					}
 
-					if (xpos > 432 && xpos < 467 && ypos > 363 && ypos < 393 && width > 1)
+					if (xpos > 432 && xpos < 467 && ypos > 363 && ypos < 393 && width > 3)
 					{
-						if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
-							if (width > 6)
+						if (Keyboard::isKeyPressed(Keyboard::LControl))
+							if (width > 8)
 								width -= 5;
 							else
-								width = 1;
+								width = 3;
 						else
 							width--;
 						size[0].setString(N2S(width));
-						if (width == 1)
+						if (width == 3)
 							ud_arrow[1].setTextureRect(IntRect(70, 0, 35, 40));
 					}
 
 					if (xpos > 432 && xpos < 467 && ypos > 329 + 66 && ypos < 359 + 66 && height < 99)
 					{
-						if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+						if (Keyboard::isKeyPressed(Keyboard::LControl))
 							if (height > 93)
 								height = 99;
 							else
@@ -1957,19 +2154,19 @@ public:
 							ud_arrow[2].setTextureRect(IntRect(0, 0, 35, 40));
 					}
 
-					if (xpos > 432 && xpos < 467 && ypos > 363 + 66 && ypos < 393 + 66 && height > 1)
+					if (xpos > 432 && xpos < 467 && ypos > 363 + 66 && ypos < 393 + 66 && height > 3)
 					{
-						if (Keyboard::isKeyPressed(sf::Keyboard::LControl))
+						if (Keyboard::isKeyPressed(Keyboard::LControl))
 						{
-							if (height > 6)
+							if (height > 8)
 								height -= 5;
 							else
-								height = 1;
+								height = 3;
 						}
 						else
 							height--;
 						size[1].setString(N2S(height));
-						if (height == 1)
+						if (height == 3)
 							ud_arrow[3].setTextureRect(IntRect(70, 0, 35, 40));
 					}
 				}
@@ -2085,7 +2282,14 @@ int main()
 	/* Manual nonogram input. */
 	if (ans == 'm')
 	{
-		RenderWindow window(VideoMode(ManField.wx, ManField.wy), "Field", Style::Close);
+		int x, y;
+		x = WINWIDTH > ManField.wx ? ManField.wx : WINWIDTH;
+		y = WINHEIGHT > ManField.wy ? ManField.wy : WINHEIGHT;
+		RenderWindow window(VideoMode(x, y), "Field", Style::Close);
+		View view;
+		view.reset(FloatRect(0, 0, x, y));
+		view.setViewport(FloatRect(0, 0, 1, 1));
+		window.setView(view);
 
 		while (window.isOpen())
 		{
@@ -2093,26 +2297,27 @@ int main()
 			while (window.pollEvent(event))
 			{
 				if (event.type == Event::KeyPressed)
+				{
 					if (event.key.code == Keyboard::Return)
 					{
 						/* Reset fields changed by the previous solving. */
 						{
-							for (int i = 0; i < ManField.height; i++)
-								for (int j = 0; j < ManField.width; j++)
-								{
-									ManField.cellarr[i][j].ChangeStateClick(2);
-									ManField.cellarr[i][j].black = false;
-									ManField.cellarr[i][j].white = false;
-								}
 							for (int i = 0; i < ManField.width; i++)
 								ManField.vchange[i] = true;
 							for (int i = 0; i < ManField.height; i++)
 								ManField.hchange[i] = true;
+							for (int i = 0; i < ManField.height; i++)
+								for (int j = 0; j < ManField.width; j++)
+								{
+									ManField.cellarr[i][j].ChangeStateSolve(0);
+									ManField.cellarr[i][j].black = false;
+									ManField.cellarr[i][j].white = false;
+								}
 						}
 
 						if (ManField.Solve(true) == 2)
 						{
-							std::cout << "Incorrect input. \n";
+							std::cout << "Incorrect inputTut. \n";
 							break;
 						}
 
@@ -2125,19 +2330,29 @@ int main()
 								window.close();
 								break;
 							case 2:
-								std::cout << "Incorrect input. \n";
+								std::cout << "Incorrect inputSuda. \n";
 								incorr = true;
+								for (int i = 0; i < ManField.height; i++)
+									for (int j = 0; j < ManField.width; j++)
+									{
+										ManField.cellarr[i][j].ChangeStateSolve(0);
+										ManField.cellarr[i][j].black = false;
+										ManField.cellarr[i][j].white = false;
+									}
 								break;
 							}
 							if (incorr)
 								break;
-						}						
-					}						
-
+						}
+					}
+				}
 				if (event.type == Event::Closed)
 					return 0;
-				else						
-					ManField.ManEventReaction(event);				
+				else
+				{
+					ManField.ManEventReaction(event, view);
+					window.setView(view);
+				}
 			}
 
 			ManField.Draw(window);
@@ -2151,9 +2366,17 @@ int main()
 
 	if (ans == 'm')
 		Field = ManField;
+
+	int x, y;
+	x = WINWIDTH > Field.wx ? Field.wx : WINWIDTH;
+	y = WINHEIGHT > Field.wy ? Field.wy : WINHEIGHT;
 	
 	/* Create a window. */
-	RenderWindow window(VideoMode(Field.wx, Field.wy), "Field", Style::Close);
+	RenderWindow window(VideoMode(x, y), "Field2", Style::Close);
+	View view;
+	view.reset(FloatRect(0, 0, x, y));
+	view.setViewport(FloatRect(0, 0, 1, 1));
+	window.setView(view);
 
 	while (window.isOpen())
 	{
@@ -2163,7 +2386,10 @@ int main()
 			if (event.type == Event::Closed)
 				window.close();
 			else
-				Field.EventReaction(event);
+			{
+				Field.EventReaction(event, view);
+				window.setView(view);
+			}
 		}
 		
 		Field.Draw(window);
