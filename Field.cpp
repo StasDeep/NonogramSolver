@@ -13,6 +13,10 @@
 
 #define MENUWIDTH 1280
 #define MENUHEIGHT 600
+#define DELETE_2D_ARRAY(arr, height) for (int i = 0; i < height; ++i)\
+	delete[] arr[i];\
+	delete[] arr;
+#define DELETE_1D_ARRAY(arr) delete[] arr;
 
 /* Initialize dynamic 2D array of integer numbers. */
 int **CreateArr(int m, int n)
@@ -224,6 +228,7 @@ public:
 
 	}
 
+	/* Constructor for manual input. */
 	BWNonogram(int x, int y)
 	{
 		answer = 'm';
@@ -237,11 +242,10 @@ public:
 		vindex = (height + 1) / 2;
 		hstart = 0;
 		vstart = 0;
-
-		if (height > 50)
-			cellsize = 1000 / (height + vindex - vstart);
-		else
-			cellsize = 500 / (height + vindex - vstart);
+		
+		cellsize = 32;
+		if (32 * height > 700 || 32 * width > 1200)
+			cellsize = height > width ? 700 / height : 1200 / width;
 		
 		horizontal = CreateArr(height, hindex);
 		vertical = CreateArr(vindex, width);
@@ -251,6 +255,28 @@ public:
 		wx = (width + hindex - hstart) * cellsize + 1;
 		wy = (height + vindex - vstart) * cellsize + 1;
 	}
+
+	/* Destructor. */
+#if 0
+	~BWNonogram()
+	{
+		if (answer != 'm')
+		{
+			std::cout << "Starting Field destructing...\n";
+			DELETE_2D_ARRAY(hcurrdescr, height);
+			DELETE_2D_ARRAY(vcurrdescr, vindex);
+		}
+		DELETE_2D_ARRAY(horizontal, height);
+		DELETE_2D_ARRAY(vertical, vindex);		
+		DELETE_2D_ARRAY(cellarr, height);
+		DELETE_2D_ARRAY(hortext, height);
+		DELETE_2D_ARRAY(vertext, vindex);
+		DELETE_1D_ARRAY(hchange);
+		DELETE_1D_ARRAY(vchange);
+		DELETE_1D_ARRAY(hline);
+		DELETE_1D_ARRAY(vline);
+	}
+#endif
 
 	/* Create an array of cells and a grid with lines.. */
 	void CreateField()
@@ -378,7 +404,7 @@ public:
 		Descr >> height;
 		Descr >> vstart;
 		Descr >> hstart;
-
+		
 		hindex = (width + 1) / 2;
 		vindex = (height + 1) / 2;
 		hstart = hindex - hstart;
@@ -510,7 +536,7 @@ public:
 	}
 
 	/* Writes current description to NewNonogram.txt. */
-	void SaveDescription()
+	void SaveDrawnDescription()
 	{
 		int verstart = 0;
 		int horstart = 0;
@@ -566,7 +592,65 @@ public:
 			Descr << "\n";
 		}
 		Descr.close();
+	}
 
+	/* Writes current description to NewNonogram.txt. */
+	void SaveManualDescription()
+	{
+		int verstart = 0;
+		int horstart = 0;
+		/* Count the amount of empty lines in vertical blocks description. */
+		for (int i = 0; i < vindex; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				if (vertical[i][j] != 0)
+					break;
+				else
+					if (j == width - 1)
+						verstart++;
+			}
+			if (verstart != i + 1)
+				break;
+		}
+
+		/* Count the amount of empty columns in horizontal blocks description. */
+		for (int j = 0; j < hindex; j++)
+		{
+			for (int i = 0; i < height; i++)
+			{
+				if (horizontal[i][j] != 0)
+					break;
+				else
+					if (i == height - 1)
+						horstart++;
+			}
+			if (horstart != j + 1)
+				break;
+		}
+
+		/* Write current description to the new file. */
+		std::ofstream Descr;
+		Descr.open("Nonograms/NewNonogram.txt");
+		Descr << width << " " << height << " ";
+		Descr << vindex - verstart << " " << hindex - horstart << "\n";
+
+		/* Write vertical blocks description. */
+		for (int i = verstart; i < vindex; i++)
+		{
+			for (int j = 0; j < width; j++)
+				Descr << vertical[i][j] << " ";
+			Descr << "\n";
+		}
+
+		/* Write horizontal blocks description. */
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = horstart; j < hindex; j++)
+				Descr << horizontal[i][j] << " ";
+			Descr << "\n";
+		}
+		Descr.close();
 	}
 
 	/* Check if the user's solving is correct. */
@@ -651,7 +735,7 @@ public:
 
 		if (checkifsolved)
 		{
-			std::system("cls");
+			//std::system("cls");
 			std::cout << "CORRECT!\nCONGRATULATIONS!";
 			solved = true;
 			return 1;
@@ -1083,7 +1167,7 @@ public:
 				ShowDescription();
 
 			if (event.key.code == Keyboard::S && answer == 'p')
-				SaveDescription();
+				SaveDrawnDescription();
 
 			break;
 
@@ -1178,6 +1262,10 @@ public:
 			}
 
 			break;
+
+		case Event::KeyPressed:
+			if (event.key.code == Keyboard::S)
+				SaveManualDescription();
 		}
 
 	}
@@ -1216,7 +1304,6 @@ class MainMenu
 {
 public:
 	int name = 0;
-	bool bcolor[2];
 	bool bdiff[3];
 
 	int width = 5;
@@ -1232,13 +1319,11 @@ public:
 	Texture titlemenutex;
 
 	Sprite play_bg;
-	Sprite color[2];
 	Sprite diff[3];
 	Sprite lr_arrow[2];	
 	Sprite start;
 	Sprite names;	
 	Texture play_bgtex;
-	Texture colortex;
 	Texture difftex;
 	Texture lr_arrowtex;
 	Texture starttex;
@@ -1264,7 +1349,6 @@ public:
 			titlemenutex.loadFromFile("Images/menu.png");
 
 			play_bgtex.loadFromFile("Images/pmenutop.png");
-			colortex.loadFromFile("Images/settings.png");
 			difftex.loadFromFile("Images/settings2.png");
 			lr_arrowtex.loadFromFile("Images/arrowbuttons.png");
 			starttex.loadFromFile("Images/startbutton.png");
@@ -1301,24 +1385,12 @@ public:
 		{
 			play_bg.setTexture(play_bgtex);
 			play_bg.setTextureRect(IntRect(0, 0, 1280, 130));
-			play_bg.setPosition(0, 0);
+			play_bg.setPosition(0, 0);		
 
-			color[0].setTexture(colortex);			
-			color[1].setTexture(colortex);			
-
-			diff[0].setTexture(difftex);
-			diff[0].setTextureRect(IntRect(220, 0, 110, 50));
-			diff[0].setPosition(420, 260);
-			bdiff[0] = true;
+			diff[0].setTexture(difftex);			
 			diff[1].setTexture(difftex);
-			diff[1].setTextureRect(IntRect(330, 0, 150, 50));
-			diff[1].setPosition(560, 260);
-			bdiff[1] = false;
 			diff[2].setTexture(difftex);
-			diff[2].setTextureRect(IntRect(780, 0, 110, 50));
-			diff[2].setPosition(730, 260);
-			bdiff[2] = false;
-
+			
 			lr_arrow[0].setTexture(lr_arrowtex);
 			lr_arrow[1].setTexture(lr_arrowtex);			
 
@@ -1396,8 +1468,6 @@ public:
 		window.clear(Color(39, 39, 39));
 
 		window.draw(play_bg);
-		window.draw(color[0]);
-		window.draw(color[1]);
 		window.draw(diff[0]);
 		window.draw(diff[1]);
 		window.draw(diff[2]);
@@ -1412,6 +1482,9 @@ public:
 		window.clear(Color(39, 39, 39));
 
 		window.draw(solve_bg);
+		window.draw(diff[0]);
+		window.draw(diff[1]);
+		window.draw(diff[2]);
 		window.draw(back);
 		window.draw(OK);
 		window.draw(size[0]);
@@ -1420,8 +1493,6 @@ public:
 		window.draw(ud_arrow[1]);
 		window.draw(ud_arrow[2]);
 		window.draw(ud_arrow[3]);
-		window.draw(color[0]);
-		window.draw(color[1]);
 		window.draw(lr_arrow[0]);
 		window.draw(lr_arrow[1]);
 		window.draw(names);
@@ -1471,21 +1542,24 @@ public:
 				/* Play. */
 				if (ypos > height / 2 - 150 && ypos < height / 2 - 50)
 				{
-					color[0].setTextureRect(IntRect(480, 0, 240, 50));
-					color[0].setPosition(420, 160);
-					bcolor[0] = true;;
-					color[1].setTextureRect(IntRect(720, 0, 150, 50));
-					color[1].setPosition(687, 160);
-					bcolor[1] = false;
-
 					lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
-					lr_arrow[0].setPosition(440, 360);
+					lr_arrow[0].setPosition(440, 360 - 60);
 					lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
-					lr_arrow[1].setPosition(800, 360);
+					lr_arrow[1].setPosition(800, 360 - 60);
+
+					diff[0].setTextureRect(IntRect(220, 0, 110, 50));
+					diff[0].setPosition(420, 260 - 60);
+					bdiff[0] = true;
+					diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+					diff[1].setPosition(560, 260 - 60);
+					bdiff[1] = false;
+					diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+					diff[2].setPosition(730, 260 - 60);
+					bdiff[2] = false;
 
 					name = 0;
 					names.setTextureRect(IntRect(0, 0, 290, 44));
-					names.setPosition(495, 364);
+					names.setPosition(495, 364 - 60);
 
 					return 'p';
 				}					
@@ -1493,21 +1567,30 @@ public:
 				/* Solve. */
 				if (ypos > height / 2 - 50 && ypos < height / 2 + 50)
 				{
-					color[0].setTextureRect(IntRect(480, 0, 240, 50));
-					color[0].setPosition(766, 338);
-					bcolor[0] = true;
-					color[1].setTextureRect(IntRect(720, 0, 150, 50));
-					color[1].setPosition(1033, 338);
-					bcolor[1] = false;
-
 					lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
 					lr_arrow[0].setPosition(777, 403);
 					lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
 					lr_arrow[1].setPosition(1137, 403);
 
+					diff[0].setTextureRect(IntRect(220, 0, 110, 50));
+					diff[0].setPosition(420 + 350, 330);
+					bdiff[0] = true;
+					diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+					diff[1].setPosition(560 + 350, 330);
+					bdiff[1] = false;
+					diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+					diff[2].setPosition(730 + 350, 330);
+					bdiff[2] = false;
+
 					name = 0;
 					names.setTextureRect(IntRect(0, 0, 290, 44));
 					names.setPosition(832, 407);
+
+					cap.setFillColor(Color(39, 39, 39, 200));
+					cap.setPosition(684, 170);
+					activeleft = true;
+					activeright = false;
+
 					return 's';
 				}
 
@@ -1533,43 +1616,31 @@ public:
 					play_bg.setTextureRect(IntRect(0, 130, 1280, 130));
 				else
 					play_bg.setTextureRect(IntRect(0, 0, 1280, 130));
-
-				if (bcolor[0] == false)
-					if (xpos > 420 && xpos < 660 && ypos > 160 && ypos < 210)
-						color[0].setTextureRect(IntRect(240, 0, 240, 50));
-					else
-						color[0].setTextureRect(IntRect(0, 0, 240, 50));
-
-				if (bcolor[1] == false)
-					if (xpos > 687 && xpos < 837 && ypos > 160 && ypos < 210 )
-						color[1].setTextureRect(IntRect(870, 0, 150, 50));
-					else
-						color[1].setTextureRect(IntRect(720, 0, 150, 50));
 				
 				if (bdiff[0] == false)
-					if (xpos > 420 && xpos < 530 && ypos > 260 && ypos < 310)
+					if (xpos > 420 && xpos < 530 && ypos > 260 - 60 && ypos < 310 - 60)
 						diff[0].setTextureRect(IntRect(110, 0, 110, 50));
 					else
 						diff[0].setTextureRect(IntRect(0, 0, 110, 50));
 
 				if (bdiff[1] == false)
-					if (xpos > 560 && xpos < 710 && ypos > 260 && ypos < 310)
+					if (xpos > 560 && xpos < 710 && ypos > 260 - 60 && ypos < 310 - 60)
 						diff[1].setTextureRect(IntRect(480, 0, 150, 50));
 					else
 						diff[1].setTextureRect(IntRect(330, 0, 150, 50));
 
 				if (bdiff[2] == false)
-					if (xpos > 730 && xpos < 840 && ypos > 260 && ypos < 310)
+					if (xpos > 730 && xpos < 840 && ypos > 260 - 60 && ypos < 310 - 60)
 						diff[2].setTextureRect(IntRect(890, 0, 110, 50));
 					else
 						diff[2].setTextureRect(IntRect(780, 0, 110, 50));
 
-				if (xpos > 440 && xpos < 480 && ypos > 360 && ypos < 410 && name > 0)
+				if (xpos > 440 && xpos < 480 && ypos > 360 - 60 && ypos < 410 - 60 && name > 0)
 					lr_arrow[0].setTextureRect(IntRect(40, 0, 40, 50));
 				else
 					lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
 
-				if (xpos > 800 && xpos < 840 && ypos > 360 && ypos < 410 && name < 6)
+				if (xpos > 800 && xpos < 840 && ypos > 360 - 60 && ypos < 410 - 60 && name < 6)
 					lr_arrow[1].setTextureRect(IntRect(120, 0, 40, 50));
 				else
 					lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
@@ -1595,23 +1666,7 @@ public:
 					return 0;
 				}
 
-				if (xpos > 420 && xpos < 660 && ypos > 160 && ypos < 210)
-				{
-					bcolor[0] = true;
-					bcolor[1] = false;
-					color[0].setTextureRect(IntRect(480, 0, 240, 50));
-					color[1].setTextureRect(IntRect(720, 0, 150, 50));
-				}
-
-				if (xpos > 687 && xpos < 837 && ypos > 160 && ypos < 210)
-				{
-					bcolor[1] = true;
-					bcolor[0] = false;
-					color[1].setTextureRect(IntRect(1020, 0, 150, 50));
-					color[0].setTextureRect(IntRect(0, 0, 240, 50));
-				}
-
-				if (xpos > 420 && xpos < 530 && ypos > 260 && ypos < 310)
+				if (xpos > 420 && xpos < 530 && ypos > 260 - 60 && ypos < 310 - 60)
 				{
 					bdiff[0] = true;
 					bdiff[1] = false;
@@ -1621,7 +1676,7 @@ public:
 					diff[2].setTextureRect(IntRect(780, 0, 110, 50));
 				}
 
-				if (xpos > 560 && xpos < 710 && ypos > 260 && ypos < 310)
+				if (xpos > 560 && xpos < 710 && ypos > 260 - 60 && ypos < 310 - 60)
 				{
 					bdiff[0] = false;
 					bdiff[1] = true;
@@ -1632,7 +1687,7 @@ public:
 				}
 
 
-				if (xpos > 730 && xpos < 840 && ypos > 260 && ypos < 310)
+				if (xpos > 730 && xpos < 840 && ypos > 260 - 60 && ypos < 310 - 60)
 				{
 					bdiff[0] = false;
 					bdiff[1] = false;
@@ -1642,14 +1697,14 @@ public:
 					diff[2].setTextureRect(IntRect(1000, 0, 110, 50));
 				}
 
-				if (xpos > 440 && xpos < 480 && ypos > 360 && ypos < 410 && name > 0)
+				if (xpos > 440 && xpos < 480 && ypos > 360 - 60 && ypos < 410 - 60 && name > 0)
 				{
 					names.setTextureRect(IntRect(--name * 290, 0, 290, 44));
 					if (name == 0)
 						lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
 				}
 
-				if (xpos > 800 && xpos < 840 && ypos > 360 && ypos < 410 && name < 6)
+				if (xpos > 800 && xpos < 840 && ypos > 360 - 60 && ypos < 410 - 60 && name < 6)
 				{
 					names.setTextureRect(IntRect(++name * 290, 0, 290, 44));
 					if (name == 6)
@@ -1699,18 +1754,25 @@ public:
 						lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
 				}
 
-				/* B&W and Colored buttons. */
+				/* Difficulty buttons. */
 				{
-					if (bcolor[0] == false)
-						if (xpos > 766 && xpos < 1006 && ypos > 338 && ypos < 388)
-							color[0].setTextureRect(IntRect(240, 0, 240, 50));
+					if (bdiff[0] == false)
+						if (xpos > 420 + 350 && xpos < 530 + 350 && ypos > 330 && ypos < 380)
+							diff[0].setTextureRect(IntRect(110, 0, 110, 50));
 						else
-							color[0].setTextureRect(IntRect(0, 0, 240, 50));
-					if (bcolor[1] == false)
-						if (xpos > 1033 && xpos < 1183 && ypos > 338 && ypos < 388)
-							color[1].setTextureRect(IntRect(870, 0, 150, 50));
+							diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+
+					if (bdiff[1] == false)
+						if (xpos > 560 + 350 && xpos < 710 + 350 && ypos > 330 && ypos < 380)
+							diff[1].setTextureRect(IntRect(480, 0, 150, 50));
 						else
-							color[1].setTextureRect(IntRect(720, 0, 150, 50));
+							diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+
+					if (bdiff[2] == false)
+						if (xpos > 730 + 350 && xpos < 840 + 350 && ypos > 330 && ypos < 380)
+							diff[2].setTextureRect(IntRect(890, 0, 110, 50));
+						else
+							diff[2].setTextureRect(IntRect(780, 0, 110, 50));
 				}
 
 				/* Left part. */
@@ -1805,19 +1867,36 @@ public:
 					}
 				}
 
-				/* B&W and Colored buttons. */
+				/* Difficulty buttons. */
 				{
-					if (xpos > 766 && xpos < 1006 && ypos > 338 && ypos < 388)
+					if (xpos > 420 + 350 && xpos < 530 + 350 && ypos > 330 && ypos < 380)
 					{
-						color[0].setTextureRect(IntRect(480, 0, 240, 50));
-						bcolor[0] = true;
-						bcolor[1] = false;
+						bdiff[0] = true;
+						bdiff[1] = false;
+						bdiff[2] = false;
+						diff[0].setTextureRect(IntRect(220, 0, 110, 50));
+						diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+						diff[2].setTextureRect(IntRect(780, 0, 110, 50));
 					}
-					if (xpos > 1033 && xpos < 1183 && ypos > 338 && ypos < 388)
+
+					if (xpos > 560 + 350 && xpos < 710 + 350 && ypos > 330 && ypos < 380)
 					{
-						color[1].setTextureRect(IntRect(1020, 0, 150, 50));
-						bcolor[1] = true;
-						bcolor[0] = false;
+						bdiff[0] = false;
+						bdiff[1] = true;
+						bdiff[2] = false;
+						diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+						diff[1].setTextureRect(IntRect(630, 0, 150, 50));
+						diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+					}
+
+					if (xpos > 730 + 350 && xpos < 840 + 350 && ypos > 330 && ypos < 380)
+					{
+						bdiff[0] = false;
+						bdiff[1] = false;
+						bdiff[2] = true;
+						diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+						diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+						diff[2].setTextureRect(IntRect(1000, 0, 110, 50));
 					}
 				}
 
@@ -2000,7 +2079,6 @@ int main()
 
 		menuwindow.display();
 	}	
-	
 
 	BWNonogram ManField(Menu.width, Menu.height);
 
@@ -2017,6 +2095,21 @@ int main()
 				if (event.type == Event::KeyPressed)
 					if (event.key.code == Keyboard::Return)
 					{
+						/* Reset fields changed by the previous solving. */
+						{
+							for (int i = 0; i < ManField.height; i++)
+								for (int j = 0; j < ManField.width; j++)
+								{
+									ManField.cellarr[i][j].ChangeStateClick(2);
+									ManField.cellarr[i][j].black = false;
+									ManField.cellarr[i][j].white = false;
+								}
+							for (int i = 0; i < ManField.width; i++)
+								ManField.vchange[i] = true;
+							for (int i = 0; i < ManField.height; i++)
+								ManField.hchange[i] = true;
+						}
+
 						if (ManField.Solve(true) == 2)
 						{
 							std::cout << "Incorrect input. \n";
@@ -2052,8 +2145,7 @@ int main()
 			window.display();
 		}
 	}		
-		
-	
+
 	/* Construct main field. */
 	BWNonogram Field(ans, Menu.name);
 
