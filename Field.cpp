@@ -16,6 +16,7 @@
 	delete[] arr;
 #define DELETE_1D_ARRAY(arr) delete[] arr;
 
+
 /* Initialize dynamic 2D array of integer numbers. */
 int **CreateArr(int m, int n)
 {
@@ -169,6 +170,8 @@ public:
 	bool *vchange;			/* Detects if the column has changed since last check. */
 	BWCell **cellarr;		/* Array of cells. */
 	Texture celltex;		/* Texture with an image, containing all states. */
+	Texture hamtex;			/* Texture with hamburger icon. */
+	Sprite ham;				/* "Hamburger" which calls menu. */
 	RectangleShape *hline;	/* Array of horizontal lines for grid. */
 	RectangleShape *vline;	/* Array of vertical lines for grid. */
 	Text **hortext;			/* Array of numbers with horizontal blocks description. */
@@ -228,7 +231,8 @@ public:
 
 		if (sum != 0)
 		{
-			std::cout << "INCORRECT INPUT.";
+			ErrorHint();
+			std::cout << "Incorrect input.";
 			getchar();
 		}
 
@@ -266,7 +270,6 @@ public:
 	}
 
 	/* Destructor. */
-	#if 0
 	~BWNonogram()
 	{		
 		DELETE_2D_ARRAY(hcurrdescr, height);
@@ -281,7 +284,6 @@ public:
 		DELETE_1D_ARRAY(hline);
 		DELETE_1D_ARRAY(vline);
 	}
-	#endif
 
 	/* Create an array of cells and a grid with lines.. */
 	void CreateField()
@@ -291,7 +293,7 @@ public:
 		for (int i = 0; i < height; i++)
 			cellarr[i] = new BWCell[width];
 
-		font.loadFromFile("arial.ttf");
+		font.loadFromFile("Proxima Nova Regular.otf");
 
 		/* Array of numbers for drawing horizontal blocks description. */
 		hortext = new Text *[height];
@@ -302,13 +304,15 @@ public:
 				for (int j = hstart; j < hindex; j++)
 				{
 					hortext[i][j].setFont(font);
-					hortext[i][j].setCharacterSize(cellsize - cellsize / 5);
+					hortext[i][j].setCharacterSize(cellsize - cellsize / 3);
 					hortext[i][j].setColor(Color(0, 0, 0));
-					if (horizontal[i][j] < 10)
-						hortext[i][j].setPosition((j - hstart) * cellsize + cellsize / 5, (i + vindex - vstart) * cellsize);
-					else
-						hortext[i][j].setPosition((j - hstart) * cellsize, (i + vindex - vstart) * cellsize);
 					hortext[i][j].setString(N2S(horizontal[i][j]));
+
+					FloatRect textRect = hortext[i][j].getLocalBounds();
+					int x = textRect.left + textRect.width / 2;
+					int y = textRect.top + textRect.height / 2;
+					hortext[i][j].setOrigin(x, y);
+					hortext[i][j].setPosition((j - hstart) * cellsize + cellsize / 2, (i + vindex - vstart) * cellsize + cellsize / 2);
 				}
 		}
 
@@ -321,13 +325,15 @@ public:
 				for (int j = 0; j < width; j++)
 				{
 					vertext[i][j].setFont(font);
-					vertext[i][j].setCharacterSize(cellsize - cellsize / 5);
+					vertext[i][j].setCharacterSize(cellsize - cellsize / 3);
 					vertext[i][j].setColor(Color(0, 0, 0));
-					if (vertical[i][j] < 10)
-						vertext[i][j].setPosition((j + hindex - hstart) * cellsize + cellsize / 5, (i - vstart) * cellsize);
-					else
-						vertext[i][j].setPosition((j + hindex - hstart) * cellsize, (i - vstart) * cellsize);
 					vertext[i][j].setString(N2S(vertical[i][j]));
+
+					FloatRect textRect = vertext[i][j].getLocalBounds();
+					int x = textRect.left + textRect.width / 2;
+					int y = textRect.top + textRect.height / 2;
+					vertext[i][j].setOrigin(x, y);
+					vertext[i][j].setPosition((j + hindex - hstart) * cellsize + cellsize / 2, (i - vstart) * cellsize + cellsize / 2);
 				}
 		}
 
@@ -381,6 +387,11 @@ public:
 		for (int i = 0; i < width; i++)
 			vchange[i] = true;
 
+		hamtex.loadFromFile("Images/Hamburger.png");
+		ham.setTexture(hamtex);
+		ham.setPosition(0, 0);
+		ham.setColor(Color(255, 255, 255, 100));
+
 		/* Set cells' texture. */
 		celltex.loadFromFile("Images/cells128.png");
 		celltex.setSmooth(true);
@@ -402,8 +413,7 @@ public:
 
 	/* Read blocks description from a file. */
 	void ReadDescription()
-	{
-#pragma warning (disable: 4996)					
+	{				
 		std::ifstream Descr(name);
 		Descr >> width;
 		Descr >> height;
@@ -1152,6 +1162,63 @@ public:
 
 	}
 
+	/* Window showing main shortcuts for Play/Solve mode. */
+	void PlaySolveHint()
+	{
+		RenderWindow window(VideoMode(400, 400), "PSHint", Style::Close);
+
+		while (window.isOpen())
+		{
+			Event event;
+			while (window.pollEvent(event))
+			{
+				if (event.type == Event::Closed)				
+					window.close();				
+			}		
+			window.clear(Color(37, 37, 37));
+
+			window.display();
+		}
+	}
+
+	/* Window showing main shortcuts for Manual input mode. */
+	void ManualHint()
+	{
+		RenderWindow window(VideoMode(400, 400), "MHint", Style::Close);
+
+		while (window.isOpen())
+		{
+			Event event;
+			while (window.pollEvent(event))
+			{
+				if (event.type == Event::Closed)
+					window.close();
+			}
+			window.clear(Color(37, 37, 37));
+
+			window.display();
+		}
+	}
+
+	/* Window showing error. */
+	void ErrorHint()
+	{
+		RenderWindow window(VideoMode(400, 400), "Error", Style::Close);
+
+		while (window.isOpen())
+		{
+			Event event;
+			while (window.pollEvent(event))
+			{
+				if (event.type == Event::Closed)
+					window.close();
+			}
+			window.clear(Color(37, 37, 37));
+
+			window.display();
+		}
+	}
+
 	/* Event switch case. */
 	void EventReaction(Event event, View &view)
 	{
@@ -1171,12 +1238,15 @@ public:
 
 			if (answer == 'p' && solved == false)
 			{
-				xpos = (event.mouseButton.x - fieldx - (hindex - hstart) * cellsize) / cellsize;
-				ypos = (event.mouseButton.y - fieldy - (vindex - vstart) * cellsize) / cellsize;
+				xpos = (event.mouseButton.x - fieldx - (hindex - hstart) * cellsize);
+				ypos = (event.mouseButton.y - fieldy - (vindex - vstart) * cellsize);
 
 				/* Breaks if the click is not within the field. */
 				if (xpos < 0 || ypos < 0)
 					break;
+
+				xpos /= cellsize;
+				ypos /= cellsize;
 
 				/* If mouse button has been pressed, then no cells have been changed yet. */
 				for (int i = 0; i < height; i++)
@@ -1272,7 +1342,14 @@ public:
 						}
 					}
 				}
+			
+				ham.setPosition(-fieldx, -fieldy);
 			}
+
+			if (event.mouseMove.x > 0 && event.mouseMove.x < 63 && event.mouseMove.y > 0 && event.mouseMove.y < 63)
+				ham.setColor(Color(255, 255, 255, 200));
+			else
+				ham.setColor(Color(255, 255, 255, 100));
 
 			break;
 		}
@@ -1282,6 +1359,10 @@ public:
 			/* If mouse button is not pressed anymore, mouse movement shouldn't cause cell change. */
 			mousepressed = false;
 			middlepressed = false;
+
+			if (event.mouseButton.x > 0 && event.mouseButton.x < 63 && event.mouseButton.y > 0 && event.mouseButton.y < 63)
+				PlaySolveHint();
+
 			break;
 		}
 
@@ -1358,7 +1439,15 @@ public:
 						}
 					}
 				}
+						
+				ham.setPosition(-fieldx, -fieldy);
 			}
+
+			if (event.mouseMove.x > 0 && event.mouseMove.x < 63 && event.mouseMove.y > 0 && event.mouseMove.y < 63)
+				ham.setColor(Color(255, 255, 255, 200));
+			else
+				ham.setColor(Color(255, 255, 255, 100));
+
 			break;
 		}
 
@@ -1376,6 +1465,10 @@ public:
 		case Event::MouseButtonReleased:
 		{
 			middlepressed = false;
+
+			if (event.mouseButton.x > 0 && event.mouseButton.x < 63 && event.mouseButton.y > 0 && event.mouseButton.y < 63)
+				ManualHint();
+
 			if (event.mouseButton.button == Mouse::Middle)
 				break;
 
@@ -1387,11 +1480,13 @@ public:
 				xpos = (xpos - fieldx) / cellsize - hindex;
 				ypos = (ypos - fieldy) / cellsize;
 
-				if (event.mouseButton.button == Mouse::Left)
+				if (event.mouseButton.button == Mouse::Left && vertical[ypos][xpos] < height)
 				{
 					if (Keyboard::isKeyPressed(Keyboard::LControl))
 					{
 						vertical[ypos][xpos] += 5;
+						if (vertical[ypos][xpos] > height)
+							vertical[ypos][xpos] = height;
 						vertext[ypos][xpos].setString(N2S(vertical[ypos][xpos]));
 					}
 					else
@@ -1412,10 +1507,11 @@ public:
 				}
 
 				/* Align. */
-				if (vertical[ypos][xpos] < 10)
-					vertext[ypos][xpos].setPosition((xpos + hindex - hstart) * cellsize + cellsize / 5, (ypos - vstart) * cellsize);
-				else
-					vertext[ypos][xpos].setPosition((xpos + hindex - hstart) * cellsize, (ypos - vstart) * cellsize);
+				FloatRect textRect = vertext[ypos][xpos].getLocalBounds();
+				int x = textRect.left + textRect.width / 2;
+				int y = textRect.top + textRect.height / 2;
+				vertext[ypos][xpos].setOrigin(x, y);
+				vertext[ypos][xpos].setPosition((xpos + hindex - hstart) * cellsize + cellsize / 2, (ypos - vstart) * cellsize + cellsize / 2);
 			}
 
 			/* Horizontal blocks description handling. */
@@ -1424,11 +1520,13 @@ public:
 				xpos = (xpos - fieldx) / cellsize;
 				ypos = (ypos - fieldy) / cellsize - vindex;
 
-				if (event.mouseButton.button == Mouse::Left)
+				if (event.mouseButton.button == Mouse::Left && horizontal[ypos][xpos] < width)
 				{
 					if (Keyboard::isKeyPressed(Keyboard::LControl))
 					{
 						horizontal[ypos][xpos] += 5;
+						if (horizontal[ypos][xpos] > width)
+							horizontal[ypos][xpos] = width;
 						hortext[ypos][xpos].setString(N2S(horizontal[ypos][xpos]));
 					}
 					else
@@ -1449,10 +1547,11 @@ public:
 				}
 
 				/* Align. */
-				if (horizontal[ypos][xpos] < 10)
-					hortext[ypos][xpos].setPosition((xpos - hstart) * cellsize + cellsize / 5, (ypos + vindex - vstart) * cellsize);
-				else
-					hortext[ypos][xpos].setPosition((xpos - hstart) * cellsize, (ypos + vindex - vstart) * cellsize);
+				FloatRect textRect = hortext[ypos][xpos].getLocalBounds();
+				int x = textRect.left + textRect.width / 2;
+				int y = textRect.top + textRect.height / 2;
+				hortext[ypos][xpos].setOrigin(x, y);
+				hortext[ypos][xpos].setPosition((xpos - hstart) * cellsize + cellsize / 2, (ypos + vindex - vstart) * cellsize + cellsize / 2);
 			}
 
 			break;
@@ -1494,6 +1593,136 @@ public:
 			for (int j = 0; j < width; j++)
 				if (vertical[i][j])
 					window.draw(vertext[i][j]);
+
+		window.draw(ham);
+	}
+
+	/* Solving window. */
+	bool CreateMainWindow() 
+	{
+		int x, y;
+		x = WINWIDTH > wx ? wx : WINWIDTH;
+		y = WINHEIGHT > wy ? wy : WINHEIGHT;
+
+		/* Create a window. */
+		RenderWindow window(VideoMode(x, y), "Field2", Style::Close);
+		View view;
+		view.reset(FloatRect(0, 0, x, y));
+		view.setViewport(FloatRect(0, 0, 1, 1));
+		window.setView(view);
+
+		while (window.isOpen())
+		{
+			Event event;
+			while (window.pollEvent(event))
+			{
+				if (event.type == Event::Closed)
+				{
+					window.close();
+					return 1;
+				}
+				else
+				{
+					EventReaction(event, view);
+					window.setView(view);
+				}
+			}
+
+			Draw(window);
+
+			window.display();
+
+			if (answer == 's')
+				Solve(false);
+
+		}
+		return 0;
+	}
+
+	/* Manual input window. */
+	bool CreateManualWindow()
+	{
+		int x, y;
+		x = WINWIDTH > wx ? wx : WINWIDTH;
+		y = WINHEIGHT > wy ? wy : WINHEIGHT;
+		RenderWindow window(VideoMode(x, y), "Field", Style::Close);
+		View view;
+		view.reset(FloatRect(0, 0, x, y));
+		view.setViewport(FloatRect(0, 0, 1, 1));
+		window.setView(view);
+
+		while (window.isOpen())
+		{
+			Event event;
+			while (window.pollEvent(event))
+			{
+				if (event.type == Event::KeyPressed)
+				{
+					if (event.key.code == Keyboard::Return)
+					{
+						/* Reset fields changed by the previous solving. */
+						{
+							for (int i = 0; i < width; i++)
+								vchange[i] = true;
+							for (int i = 0; i < height; i++)
+								hchange[i] = true;
+							for (int i = 0; i < height; i++)
+								for (int j = 0; j < width; j++)
+								{
+									cellarr[i][j].ChangeStateSolve(0);
+									cellarr[i][j].black = false;
+									cellarr[i][j].white = false;
+								}
+						}
+
+						if (Solve(true) == 2)
+						{
+							ErrorHint();
+							std::cout << "Incorrect input. \n";
+							break;
+						}
+
+						bool incorr = false;
+						while (!solved)
+						{
+							switch (Solve(false))
+							{
+							case 1:
+								window.close();
+								break;
+							case 2:
+								ErrorHint();
+								std::cout << "Incorrect input. \n";
+								incorr = true;
+								for (int i = 0; i < height; i++)
+									for (int j = 0; j < width; j++)
+									{
+										cellarr[i][j].ChangeStateSolve(0);
+										cellarr[i][j].black = false;
+										cellarr[i][j].white = false;
+									}
+								break;
+							}
+							if (incorr)
+								break;
+						}
+					}
+				}
+				if (event.type == Event::Closed)
+					return 1;
+				else
+				{
+					ManEventReaction(event, view);
+					window.setView(view);
+				}
+			}
+
+			Draw(window);
+
+			window.display();
+		}
+		
+		return 0;
 	}
 };
 
@@ -2186,220 +2415,116 @@ public:
 		
 		return 3;
 	}
+
+	char CreateMenuWindow()
+	{
+		bool title = true;
+		bool play = false;
+		bool solve = false;
+		char ans;
+
+		RenderWindow menuwindow(VideoMode(MENUWIDTH, MENUHEIGHT), "Menu", Style::Close);
+
+		/* Main menu. */
+		while (menuwindow.isOpen())
+		{
+			Event event;
+			while (menuwindow.pollEvent(event))
+			{
+				if (event.type == Event::Closed)
+				{
+					menuwindow.close();
+					return 'e';
+				}
+
+				if (title)
+				{
+					ans = TitleEventReaction(event, MENUWIDTH, MENUHEIGHT);
+
+					switch (ans)
+					{
+					case 'e':
+						menuwindow.close();
+						return 'e';
+						break;
+					case 'p':
+						title = false;
+						play = true;
+						continue;
+					case 's':
+						title = false;
+						solve = true;
+						continue;
+					}
+				}
+
+				if (play)
+				{
+					switch (PlayEventReaction(event))
+					{
+					case 0:
+						play = false;
+						title = true;
+						break;
+					case 1:
+						menuwindow.close();
+						break;
+					}
+				}
+
+				if (solve)
+				{
+					switch (SolveEventReaction(event))
+					{
+					case 0:
+						solve = false;
+						title = true;
+						break;
+					case 1:
+						menuwindow.close();
+						break;
+					case 2:
+						ans = 'm';
+						menuwindow.close();
+						break;
+					}
+				}
+			}
+
+			if (title)
+				DrawTitle(menuwindow);
+			if (play)
+				DrawPlay(menuwindow);
+			if (solve)
+				DrawSolve(menuwindow);
+
+			menuwindow.display();
+		}
+
+		return ans;
+	}
 };
 
 
 int main()
 {
-	bool title = true;
-	bool play = false;
-	bool solve = false;
 	char ans;
-	
-	/* Construct the menu. */
-	MainMenu Menu(MENUWIDTH, MENUHEIGHT);
-
-	RenderWindow menuwindow(VideoMode(MENUWIDTH, MENUHEIGHT), "Menu", Style::Close);
-
-	/* Main menu. */
-	while (menuwindow.isOpen())
+	while (true)
 	{
-		Event event;
-		while (menuwindow.pollEvent(event))
-		{
-			if (event.type == Event::Closed)
-			{
-				menuwindow.close();
-				return 0;
-			}			
-			
-			if (title)
-			{
-				ans = Menu.TitleEventReaction(event, MENUWIDTH, MENUHEIGHT);
+		MainMenu Menu(MENUWIDTH, MENUHEIGHT);
+		ans = Menu.CreateMenuWindow();
+		if (ans == 'e')
+			return 0;
 
-				switch (ans)
-				{
-				case 'e':
-					menuwindow.close();
-					return 0;
-					break;
-				case 'p':
-					title = false;
-					play = true;
-					continue;
-				case 's':
-					title = false;
-					solve = true;
-					continue;
-				}
-			}
+		BWNonogram ManField(Menu.width, Menu.height);
+		if (ans == 'm' && ManField.CreateManualWindow())
+			continue;
 
-			if (play)
-			{
-				switch (Menu.PlayEventReaction(event))
-				{
-				case 0:
-					play = false;
-					title = true;
-					break;
-				case 1:
-					menuwindow.close();
-					break;
-				}
-			}
-
-			if (solve)
-			{
-				switch (Menu.SolveEventReaction(event))
-				{
-				case 0:
-					solve = false;
-					title = true;
-					break;
-				case 1:
-					menuwindow.close();
-					break;
-				case 2:
-					ans = 'm';
-					menuwindow.close();
-					break;
-				}
-			}						
-		}
-
-		if (title)
-			Menu.DrawTitle(menuwindow);
-		if (play)
-			Menu.DrawPlay(menuwindow);
-		if (solve)
-			Menu.DrawSolve(menuwindow);
-
-		menuwindow.display();
-	}	
-
-	BWNonogram ManField(Menu.width, Menu.height);
-
-	/* Manual nonogram input. */
-	if (ans == 'm')
-	{
-		int x, y;
-		x = WINWIDTH > ManField.wx ? ManField.wx : WINWIDTH;
-		y = WINHEIGHT > ManField.wy ? ManField.wy : WINHEIGHT;
-		RenderWindow window(VideoMode(x, y), "Field", Style::Close);
-		View view;
-		view.reset(FloatRect(0, 0, x, y));
-		view.setViewport(FloatRect(0, 0, 1, 1));
-		window.setView(view);
-
-		while (window.isOpen())
-		{
-			Event event;		
-			while (window.pollEvent(event))
-			{
-				if (event.type == Event::KeyPressed)
-				{
-					if (event.key.code == Keyboard::Return)
-					{
-						/* Reset fields changed by the previous solving. */
-						{
-							for (int i = 0; i < ManField.width; i++)
-								ManField.vchange[i] = true;
-							for (int i = 0; i < ManField.height; i++)
-								ManField.hchange[i] = true;
-							for (int i = 0; i < ManField.height; i++)
-								for (int j = 0; j < ManField.width; j++)
-								{
-									ManField.cellarr[i][j].ChangeStateSolve(0);
-									ManField.cellarr[i][j].black = false;
-									ManField.cellarr[i][j].white = false;
-								}
-						}
-
-						if (ManField.Solve(true) == 2)
-						{
-							std::cout << "Incorrect inputTut. \n";
-							break;
-						}
-
-						bool incorr = false;
-						while (!ManField.solved)
-						{
-							switch (ManField.Solve(false))
-							{
-							case 1:
-								window.close();
-								break;
-							case 2:
-								std::cout << "Incorrect inputSuda. \n";
-								incorr = true;
-								for (int i = 0; i < ManField.height; i++)
-									for (int j = 0; j < ManField.width; j++)
-									{
-										ManField.cellarr[i][j].ChangeStateSolve(0);
-										ManField.cellarr[i][j].black = false;
-										ManField.cellarr[i][j].white = false;
-									}
-								break;
-							}
-							if (incorr)
-								break;
-						}
-					}
-				}
-				if (event.type == Event::Closed)
-					return 0;
-				else
-				{
-					ManField.ManEventReaction(event, view);
-					window.setView(view);
-				}
-			}
-
-			ManField.Draw(window);
-
-			window.display();
-		}
-	}		
-
-	/* Construct main field. */
-	BWNonogram Field(ans, Menu.name);
-
-	if (ans == 'm')
-		Field = ManField;
-
-	int x, y;
-	x = WINWIDTH > Field.wx ? Field.wx : WINWIDTH;
-	y = WINHEIGHT > Field.wy ? Field.wy : WINHEIGHT;
-	
-	/* Create a window. */
-	RenderWindow window(VideoMode(x, y), "Field2", Style::Close);
-	View view;
-	view.reset(FloatRect(0, 0, x, y));
-	view.setViewport(FloatRect(0, 0, 1, 1));
-	window.setView(view);
-
-	while (window.isOpen())
-	{
-		Event event;
-		while (window.pollEvent(event))
-		{
-			if (event.type == Event::Closed)
-				window.close();
-			else
-			{
-				Field.EventReaction(event, view);
-				window.setView(view);
-			}
-		}
-		
-		Field.Draw(window);
-
-		window.display();
-
-		if (Field.answer == 's')
-			Field.Solve(false);
-
+		BWNonogram Field(ans, Menu.name);
+		if (ans == 'm')
+			Field = ManField;
+		if (Field.CreateMainWindow())
+			continue;
 	}
-
 	return 0;
 }
