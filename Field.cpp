@@ -144,6 +144,7 @@ class BWNonogram
 public:
 	char name[44];
 	char answer;			/* Solve or Play? */
+	bool win;
 	bool solved;			/* If solved (true) nonogram cannot be changed. */
 	bool mousepressed;		/* If true, then mouse motion should change cells' state. */
 	bool middlepressed;		/* If true, then mouse motion changes view. */
@@ -207,6 +208,7 @@ public:
 		}
 		answer = ans;
 		button = 0;
+		win = false;
 		solved = false;
 		mousepressed = false;
 		middlepressed = false;
@@ -243,6 +245,7 @@ public:
 	{
 		answer = 'm';
 		button = 0;
+		win = false;
 		solved = false;
 		mousepressed = false;
 		middlepressed = false;
@@ -270,10 +273,10 @@ public:
 	}
 
 	/* Destructor. */
-	~BWNonogram()
+	/*~BWNonogram()
 	{		
 		DELETE_2D_ARRAY(hcurrdescr, height);
-		DELETE_2D_ARRAY(vcurrdescr, vindex);		
+		DELETE_2D_ARRAY(vcurrdescr, vindex);	
 		DELETE_2D_ARRAY(horizontal, height);
 		DELETE_2D_ARRAY(vertical, vindex);		
 		DELETE_2D_ARRAY(cellarr, height);
@@ -283,7 +286,7 @@ public:
 		DELETE_1D_ARRAY(vchange);
 		DELETE_1D_ARRAY(hline);
 		DELETE_1D_ARRAY(vline);
-	}
+	}*/
 
 	/* Create an array of cells and a grid with lines.. */
 	void CreateField()
@@ -681,8 +684,7 @@ public:
 		for (int i = 0; i < height; i++)
 			for (int j = 0; j < hindex; j++)
 				if (horizontal[i][j] != hcurrdescr[i][j])
-					return false;
-
+					return false;		
 		return true;
 	}
 
@@ -1165,7 +1167,13 @@ public:
 	/* Window showing main shortcuts for Play/Solve mode. */
 	void PlaySolveHint()
 	{
-		RenderWindow window(VideoMode(400, 400), "PSHint", Style::Close);
+		RenderWindow window(VideoMode(626, 345), "PSHint", Style::Close);
+
+		Sprite hint;
+		Texture hinttex;
+		hinttex.loadFromFile("Images/PSHint.png");
+		hint.setTexture(hinttex);
+		hint.setPosition(0, 0);
 
 		while (window.isOpen())
 		{
@@ -1177,6 +1185,8 @@ public:
 			}		
 			window.clear(Color(37, 37, 37));
 
+			window.draw(hint);
+
 			window.display();
 		}
 	}
@@ -1184,7 +1194,13 @@ public:
 	/* Window showing main shortcuts for Manual input mode. */
 	void ManualHint()
 	{
-		RenderWindow window(VideoMode(400, 400), "MHint", Style::Close);
+		RenderWindow window(VideoMode(626, 377), "MHint", Style::Close);
+
+		Sprite hint;
+		Texture hinttex;
+		hinttex.loadFromFile("Images/ManHint.png");
+		hint.setTexture(hinttex);
+		hint.setPosition(0, 0);
 
 		while (window.isOpen())
 		{
@@ -1195,6 +1211,8 @@ public:
 					window.close();
 			}
 			window.clear(Color(37, 37, 37));
+
+			window.draw(hint);
 
 			window.display();
 		}
@@ -1203,7 +1221,13 @@ public:
 	/* Window showing error. */
 	void ErrorHint()
 	{
-		RenderWindow window(VideoMode(400, 400), "Error", Style::Close);
+		RenderWindow window(VideoMode(373, 301), "Error", Style::Close);
+
+		Sprite hint;
+		Texture hinttex;
+		hinttex.loadFromFile("Images/Error.png");
+		hint.setTexture(hinttex);
+		hint.setPosition(0, 0);
 
 		while (window.isOpen())
 		{
@@ -1214,6 +1238,34 @@ public:
 					window.close();
 			}
 			window.clear(Color(37, 37, 37));
+
+			window.draw(hint);
+
+			window.display();
+		}
+	}
+
+	/* Window showing congratulations. */
+	void WinHint()
+	{
+		RenderWindow window(VideoMode(367, 261), "Congratulations!", Style::Close);
+		Sprite hint;
+		Texture hinttex;
+		hinttex.loadFromFile("Images/Win.png");
+		hint.setTexture(hinttex);
+		hint.setPosition(0, 0);
+
+		while (window.isOpen())
+		{
+			Event event;
+			while (window.pollEvent(event))
+			{
+				if (event.type == Event::Closed)
+					window.close();
+			}
+			window.clear(Color(37, 37, 37));
+
+			window.draw(hint);
 
 			window.display();
 		}
@@ -1258,7 +1310,7 @@ public:
 
 				UpdateDescription(xpos, ypos);
 
-				if (CheckUser())
+				if (CheckUser() && solved == false)
 				{
 					std::system("cls");
 					std::cout << "CORRECT!\nCONGRATULATIONS!";
@@ -1288,7 +1340,7 @@ public:
 
 				UpdateDescription(xpos, ypos);
 
-				if (CheckUser())
+				if (CheckUser() && solved == false)
 				{
 					std::system("cls");
 					std::cout << "CORRECT!\nCONGRATULATIONS!";
@@ -1631,6 +1683,12 @@ public:
 			Draw(window);
 
 			window.display();
+			
+			if (solved && !win && answer == 'p')
+			{
+				WinHint();
+				win = true;
+			}
 
 			if (answer == 's')
 				Solve(false);
@@ -1678,7 +1736,6 @@ public:
 						if (Solve(true) == 2)
 						{
 							ErrorHint();
-							std::cout << "Incorrect input. \n";
 							break;
 						}
 
@@ -1688,11 +1745,12 @@ public:
 							switch (Solve(false))
 							{
 							case 1:
+								fieldx = fieldy = 0;
+								ham.setPosition(0, 0);
 								window.close();
 								break;
 							case 2:
 								ErrorHint();
-								std::cout << "Incorrect input. \n";
 								incorr = true;
 								for (int i = 0; i < height; i++)
 									for (int j = 0; j < width; j++)
@@ -1725,6 +1783,9 @@ public:
 		return 0;
 	}
 };
+
+#define MEDIUMSTART 3
+#define HARDSTART 5
 
 class MainMenu
 {
@@ -2094,6 +2155,8 @@ public:
 
 				if (xpos > 420 && xpos < 530 && ypos > 260 - 60 && ypos < 310 - 60)
 				{
+					name = 0;
+					names.setTextureRect(IntRect(0, 0, 290, 44));
 					bdiff[0] = true;
 					bdiff[1] = false;
 					bdiff[2] = false;
@@ -2104,6 +2167,8 @@ public:
 
 				if (xpos > 560 && xpos < 710 && ypos > 260 - 60 && ypos < 310 - 60)
 				{
+					name = MEDIUMSTART;
+					names.setTextureRect(IntRect(MEDIUMSTART * 290, 0, 290, 44));
 					bdiff[0] = false;
 					bdiff[1] = true;
 					bdiff[2] = false;
@@ -2115,6 +2180,8 @@ public:
 
 				if (xpos > 730 && xpos < 840 && ypos > 260 - 60 && ypos < 310 - 60)
 				{
+					name = HARDSTART;
+					names.setTextureRect(IntRect(HARDSTART * 290, 0, 290, 44));
 					bdiff[0] = false;
 					bdiff[1] = false;
 					bdiff[2] = true;
@@ -2124,10 +2191,29 @@ public:
 				}
 
 				if (xpos > 440 && xpos < 480 && ypos > 360 - 60 && ypos < 410 - 60 && name > 0)
-				{
+				{					
 					names.setTextureRect(IntRect(--name * 290, 0, 290, 44));
 					if (name == 0)
 						lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+					if (name < HARDSTART)
+					{
+						bdiff[0] = false;
+						bdiff[1] = true;
+						bdiff[2] = false;
+						diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+						diff[1].setTextureRect(IntRect(630, 0, 150, 50));
+						diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+					}
+					if (name < MEDIUMSTART)
+					{
+						bdiff[0] = true;
+						bdiff[1] = false;
+						bdiff[2] = false;
+						diff[0].setTextureRect(IntRect(220, 0, 110, 50));
+						diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+						diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+					}
+
 				}
 
 				if (xpos > 800 && xpos < 840 && ypos > 360 - 60 && ypos < 410 - 60 && name < 6)
@@ -2135,6 +2221,24 @@ public:
 					names.setTextureRect(IntRect(++name * 290, 0, 290, 44));
 					if (name == 6)
 						lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+					if (name >= MEDIUMSTART)
+					{
+						bdiff[0] = false;
+						bdiff[1] = true;
+						bdiff[2] = false;
+						diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+						diff[1].setTextureRect(IntRect(630, 0, 150, 50));
+						diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+					}
+					if (name >= HARDSTART)
+					{
+						bdiff[0] = false;
+						bdiff[1] = false;
+						bdiff[2] = true;
+						diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+						diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+						diff[2].setTextureRect(IntRect(1000, 0, 110, 50));
+					}
 				}
 
 				if (xpos > 495 && xpos < 785 && ypos > 470 && ypos < 514)
@@ -2284,12 +2388,48 @@ public:
 						names.setTextureRect(IntRect(--name * 290, 0, 290, 44));
 						if (name == 0)
 							lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
+						if (name < HARDSTART)
+						{
+							bdiff[0] = false;
+							bdiff[1] = true;
+							bdiff[2] = false;
+							diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+							diff[1].setTextureRect(IntRect(630, 0, 150, 50));
+							diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+						}
+						if (name < MEDIUMSTART)
+						{
+							bdiff[0] = true;
+							bdiff[1] = false;
+							bdiff[2] = false;
+							diff[0].setTextureRect(IntRect(220, 0, 110, 50));
+							diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+							diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+						}
 					}
 					if (xpos > 1137 && xpos < 1177 && ypos > 403 && ypos < 453 && name < 6)
 					{
 						names.setTextureRect(IntRect(++name * 290, 0, 290, 44));
 						if (name == 6)
 							lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
+						if (name >= MEDIUMSTART)
+						{
+							bdiff[0] = false;
+							bdiff[1] = true;
+							bdiff[2] = false;
+							diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+							diff[1].setTextureRect(IntRect(630, 0, 150, 50));
+							diff[2].setTextureRect(IntRect(780, 0, 110, 50));
+						}
+						if (name >= HARDSTART)
+						{
+							bdiff[0] = false;
+							bdiff[1] = false;
+							bdiff[2] = true;
+							diff[0].setTextureRect(IntRect(0, 0, 110, 50));
+							diff[1].setTextureRect(IntRect(330, 0, 150, 50));
+							diff[2].setTextureRect(IntRect(1000, 0, 110, 50));
+						}
 					}
 				}
 
@@ -2297,6 +2437,8 @@ public:
 				{
 					if (xpos > 420 + 350 && xpos < 530 + 350 && ypos > 330 && ypos < 380)
 					{
+						name = 0;
+						names.setTextureRect(IntRect(0, 0, 290, 44));
 						bdiff[0] = true;
 						bdiff[1] = false;
 						bdiff[2] = false;
@@ -2307,6 +2449,8 @@ public:
 
 					if (xpos > 560 + 350 && xpos < 710 + 350 && ypos > 330 && ypos < 380)
 					{
+						name = MEDIUMSTART;
+						names.setTextureRect(IntRect(MEDIUMSTART * 290, 0, 290, 44));
 						bdiff[0] = false;
 						bdiff[1] = true;
 						bdiff[2] = false;
@@ -2317,6 +2461,8 @@ public:
 
 					if (xpos > 730 + 350 && xpos < 840 + 350 && ypos > 330 && ypos < 380)
 					{
+						name = HARDSTART;
+						names.setTextureRect(IntRect(HARDSTART * 290, 0, 290, 44));
 						bdiff[0] = false;
 						bdiff[1] = false;
 						bdiff[2] = true;
@@ -2505,26 +2651,28 @@ public:
 	}
 };
 
-
-int main()
+bool Launch()
 {
 	char ans;
-	while (true)
-	{
-		MainMenu Menu(MENUWIDTH, MENUHEIGHT);
-		ans = Menu.CreateMenuWindow();
-		if (ans == 'e')
-			return 0;
 
-		BWNonogram ManField(Menu.width, Menu.height);
-		if (ans == 'm' && ManField.CreateManualWindow())
-			continue;
+	MainMenu Menu(MENUWIDTH, MENUHEIGHT);
+	ans = Menu.CreateMenuWindow();
+	if (ans == 'e')
+		return 0;
 
-		BWNonogram Field(ans, Menu.name);
-		if (ans == 'm')
-			Field = ManField;
-		if (Field.CreateMainWindow())
-			continue;
-	}
+	BWNonogram ManField(Menu.width, Menu.height);
+	if (ans == 'm' && ManField.CreateManualWindow())
+		return 1;
+
+	BWNonogram Field(ans, Menu.name);
+	if (ans == 'm')
+		Field = ManField;	
+	if (Field.CreateMainWindow())
+		return 1;
+}
+
+int main()
+{	
+	while(Launch()){}
 	return 0;
 }
