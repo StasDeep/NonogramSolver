@@ -182,30 +182,12 @@ public:
 	/* Constructor. */
 	BWNonogram(char ans, int nonogname)
 	{
-		switch (nonogname)
-		{
-		case 0:
-			strcpy_s(name, 45, "Nonograms/10x10littlehouse.txt");
-			break;
-		case 1:
-			strcpy_s(name, 45, "Nonograms/11x13skull.txt");
-			break;
-		case 2:
-			strcpy_s(name, 45, "Nonograms/14x17candies.txt");
-			break;
-		case 3:
-			strcpy_s(name, 45, "Nonograms/15x15elephant.txt");
-			break;
-		case 4:
-			strcpy_s(name, 45, "Nonograms/18x18eye.txt");
-			break;
-		case 5:
-			strcpy_s(name, 45, "Nonograms/30x42dancer.txt");
-			break;
-		case 6:
-			strcpy_s(name, 45, "Nonograms/56x26turtle.txt");
-			break;
-		}
+		char numb[3];
+		sprintf_s(numb, "%d", nonogname);
+		strcpy_s(name, 45, "Nonograms/");
+		strcat_s(name, numb);
+		strcat_s(name, ".nng");
+
 		answer = ans;
 		button = 0;
 		win = false;
@@ -742,7 +724,7 @@ public:
 	{
 		if (answer != 's' && answer != 'm' || solved == true)
 			return 0;
-
+		
 		/* The easiest check for incorrect input. Works only once. */
 		if (first)
 		{
@@ -753,8 +735,9 @@ public:
 			for (int i = 0; i < vindex; i++)
 				for (int j = 0; j < width; j++)
 					sum -= vertical[i][j];
-			if (sum != 0)
+			if (sum != 0)			
 				return 2;
+			
 		}
 		
 		/* Check if the algorithm has not solved but stopped. */
@@ -777,7 +760,7 @@ public:
 			if (solvingfreeze)
 				return 2;
 		}
-
+		
 		CheckHor();
 		for (int j = 0; j < height; j++)
 			hchange[j] = false;
@@ -785,6 +768,7 @@ public:
 		for (int j = 0; j < width; j++)
 			vchange[j] = false;		
 
+				
 		/* Detects solved nonogram by finding 0 PWHITE cells. */
 		bool checkifsolved = true;
 		for (int i = 0; i < height; i++)
@@ -921,7 +905,7 @@ public:
 				}
 			}
 		}
-		
+
 	}
 
 	/* Check all vertical lines. */
@@ -1040,9 +1024,7 @@ public:
 			for (int i = 0; i < thestart; i++)
 				if (cellarr[line][i].state == DBLACK)
 					return false;
-		if ((theblock != 0 && horizontal[line][theblock - 1] == 0) || theblock == 0)
-			for (int i = 0; i < thestart; i++)
-				cellarr[line][i].white = true;
+		
 
 		/* Process the case, when the block is not the last in the line. */
 		if (theblock < hindex - 1)
@@ -1069,6 +1051,10 @@ public:
 					for (int i = thestart + horizontal[line][theblock]; i < startnext; i++)
 						cellarr[line][i].white = true;
 
+					if ((theblock != 0 && horizontal[line][theblock - 1] == 0) || theblock == 0)
+						for (int i = 0; i < thestart; i++)
+							cellarr[line][i].white = true;
+
 					result = true;
 				}
 			}
@@ -1082,6 +1068,9 @@ public:
 				if (cellarr[line][i].state == DBLACK)
 					return false;
 
+			if ((theblock != 0 && horizontal[line][theblock - 1] == 0) || theblock == 0)
+				for (int i = 0; i < thestart; i++)
+					cellarr[line][i].white = true;
 
 			for (int j = thestart; j < thestart + horizontal[line][theblock]; j++)
 				cellarr[line][j].black = true;
@@ -1109,9 +1098,7 @@ public:
 			for (int i = 0; i < thestart; i++)
 				if (cellarr[i][col].state == DBLACK)
 					return false;
-		if ((theblock != 0 && vertical[theblock - 1][col] == 0) || theblock == 0)
-			for (int i = 0; i < thestart; i++)
-				cellarr[i][col].white = true;
+		
 
 		/* Process the case, when the block is not the last in the column. */
 		if (theblock < vindex - 1)
@@ -1138,6 +1125,10 @@ public:
 					for (int i = thestart + vertical[theblock][col]; i < startnext; i++)
 						cellarr[i][col].white = true;
 
+					if ((theblock != 0 && vertical[theblock - 1][col] == 0) || theblock == 0)
+						for (int i = 0; i < thestart; i++)
+							cellarr[i][col].white = true;
+
 					result = true;
 				}
 			}
@@ -1152,6 +1143,9 @@ public:
 				if (cellarr[i][col].state == DBLACK)
 					return false;
 
+			if ((theblock != 0 && vertical[theblock - 1][col] == 0) || theblock == 0)
+				for (int i = 0; i < thestart; i++)
+					cellarr[i][col].white = true;
 
 			for (int j = thestart; j < thestart + vertical[theblock][col]; j++)
 				cellarr[j][col].black = true;
@@ -1668,6 +1662,8 @@ public:
 			Event event;
 			while (window.pollEvent(event))
 			{
+				if (event.key.code == Keyboard::Escape)
+					return 1;
 				if (event.type == Event::Closed)
 				{
 					window.close();
@@ -1690,8 +1686,9 @@ public:
 				win = true;
 			}
 
-			if (answer == 's')
+			if (answer == 's')			
 				Solve(false);
+			
 
 		}
 		return 0;
@@ -1765,6 +1762,8 @@ public:
 								break;
 						}
 					}
+					if (event.key.code == Keyboard::Escape)
+						return 1;
 				}
 				if (event.type == Event::Closed)
 					return 1;
@@ -1784,8 +1783,10 @@ public:
 	}
 };
 
-#define MEDIUMSTART 3
-#define HARDSTART 5
+#define MEDIUMSTART 6
+#define HARDSTART 10
+#define NUMOFNONS 15
+#define NUMOFZERO NUMOFNONS - 1
 
 class MainMenu
 {
@@ -2127,7 +2128,7 @@ public:
 				else
 					lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
 
-				if (xpos > 800 && xpos < 840 && ypos > 360 - 60 && ypos < 410 - 60 && name < 6)
+				if (xpos > 800 && xpos < 840 && ypos > 360 - 60 && ypos < 410 - 60 && name < NUMOFZERO)
 					lr_arrow[1].setTextureRect(IntRect(120, 0, 40, 50));
 				else
 					lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
@@ -2216,10 +2217,10 @@ public:
 
 				}
 
-				if (xpos > 800 && xpos < 840 && ypos > 360 - 60 && ypos < 410 - 60 && name < 6)
+				if (xpos > 800 && xpos < 840 && ypos > 360 - 60 && ypos < 410 - 60 && name < NUMOFZERO)
 				{
 					names.setTextureRect(IntRect(++name * 290, 0, 290, 44));
-					if (name == 6)
+					if (name == NUMOFZERO)
 						lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
 					if (name >= MEDIUMSTART)
 					{
@@ -2278,7 +2279,7 @@ public:
 					else
 						lr_arrow[0].setTextureRect(IntRect(0, 0, 40, 50));
 
-					if (xpos > 1137 && xpos < 1177 && ypos > 403 && ypos < 453 && name < 6)
+					if (xpos > 1137 && xpos < 1177 && ypos > 403 && ypos < 453 && name < NUMOFZERO)
 						lr_arrow[1].setTextureRect(IntRect(120, 0, 40, 50));
 					else
 						lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
@@ -2407,10 +2408,10 @@ public:
 							diff[2].setTextureRect(IntRect(780, 0, 110, 50));
 						}
 					}
-					if (xpos > 1137 && xpos < 1177 && ypos > 403 && ypos < 453 && name < 6)
+					if (xpos > 1137 && xpos < 1177 && ypos > 403 && ypos < 453 && name < NUMOFZERO)
 					{
 						names.setTextureRect(IntRect(++name * 290, 0, 290, 44));
-						if (name == 6)
+						if (name == NUMOFZERO)
 							lr_arrow[1].setTextureRect(IntRect(80, 0, 40, 50));
 						if (name >= MEDIUMSTART)
 						{
